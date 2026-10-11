@@ -19,7 +19,9 @@ export default function PauseScreen() {
   const [answer, setAnswer] = useState<string | null>(null);
 
   const cap = dashboard?.capabilities.canPause;
-  const maxCycles = Math.max(1, Math.min(2, cap?.maxCycles ?? 2));
+  // Cada ciclo pausado consome 1 crédito (docs/contexto-prime.md §6.2): não oferecer mais ciclos
+  // do que créditos. Limites vêm do BFF (`maxCycles`, `creditsLeft`), nada fixo aqui.
+  const maxCycles = Math.max(1, Math.min(cap?.maxCycles ?? 1, cap?.creditsLeft ?? 1));
   const selected = reasons.data?.find((r) => r.code === reason);
 
   if (cap && !cap.allowed) {
@@ -60,7 +62,8 @@ export default function PauseScreen() {
       {cap ? (
         <AlertCard variant="paused" title="Pausar assinatura">
           <Text variant="body" tone="secondary">
-            Você tem <Text variant="bodyStrong">{cap.creditsLeft ?? 0} {(cap.creditsLeft ?? 0) === 1 ? 'pausa disponível' : 'pausas disponíveis'}</Text> neste plano. Cada pausa usa 1 crédito, independentemente da duração.
+            Você tem <Text variant="bodyStrong">{cap.creditsLeft ?? 0} {(cap.creditsLeft ?? 0) === 1 ? 'crédito de pausa' : 'créditos de pausa'}</Text> neste plano. Cada ciclo pausado usa 1 crédito, pula exatamente uma cobrança e não conta para a fidelidade.
+            {cap.closesAt ? ` O pedido de pausa pode ser feito até ${formatDate(cap.closesAt)}.` : ''}
           </Text>
         </AlertCard>
       ) : null}

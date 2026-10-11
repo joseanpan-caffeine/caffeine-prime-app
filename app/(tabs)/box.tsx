@@ -232,7 +232,7 @@ function BoxEditor({ sub, catalog, canEdit, onRefresh, refreshing, header }: Edi
   return (
     <Screen header={header} footer={footer} onRefresh={onRefresh} refreshing={refreshing}>
       <View style={styles.heading}>
-        <SectionHeader icon="options-outline" title="Minha caixa" subtitle={editable ? `Edite até o dia ${formatShortDate(editUntilIso(sub, { canEdit }), true)}` : 'Edição indisponível no momento'} />
+        <SectionHeader icon="options-outline" title="Minha caixa" subtitle={editable ? (editUntilIso(sub, { canEdit }) ? `Edite até o dia ${formatShortDate(editUntilIso(sub, { canEdit }), true)}` : 'Edição liberada') : 'Edição indisponível no momento'} />
         <Pressable onPress={() => editable && setPlanSheet(true)} disabled={!editable} accessibilityRole="button" style={styles.planChip}>
           <Badge label={editable ? 'Edição disponível' : 'Edição indisponível'} tone={editable ? 'editAvailable' : 'editUnavailable'} />
           <Text variant="caption" tone="secondary">
@@ -396,6 +396,11 @@ function BoxEditor({ sub, catalog, canEdit, onRefresh, refreshing, header }: Edi
       <ItemActionSheet visible={actionsFor !== null} onClose={() => setActionsFor(null)} actions={itemActions} />
 
       <Sheet visible={planSheet} onClose={() => setPlanSheet(false)} title="Trocar plano">
+        {/* Troca de plano começa na próxima cobrança e, no backend, cria uma assinatura nova
+            (o id muda — docs/contexto-prime.md §4.3). O app não guarda id: recarrega /me/*. */}
+        <Text variant="small" tone="secondary">
+          A troca de plano vale a partir da próxima cobrança e inicia uma nova fidelidade. O plano define só a fidelidade: a entrega continua a cada ciclo de 30 dias.
+        </Text>
         {catalog.plans.map((plan) => (
           <RadioRow
             key={plan.frequency}
@@ -406,7 +411,7 @@ function BoxEditor({ sub, catalog, canEdit, onRefresh, refreshing, header }: Edi
               setPlanSheet(false);
             }}
             label={plan.name}
-            hint={`${frequencyLabel[plan.frequency]} · ${plan.discountPercentage}% off · ${plan.commitmentMonths > 0 ? `fidelidade ${plan.commitmentMonths} meses` : 'sem fidelidade'} · ${plan.pauseCredits} pausa${plan.pauseCredits === 1 ? '' : 's'}`}
+            hint={`${frequencyLabel[plan.frequency]} · ${plan.discountPercentage}% off · ${plan.commitmentMonths > 0 ? `fidelidade ${plan.commitmentMonths} meses` : 'sem fidelidade'} · ${plan.pauseCredits} ${plan.pauseCredits === 1 ? 'crédito de pausa' : 'créditos de pausa'}`}
             right={plan.highlight ? <Badge label={plan.highlight} tone="exclusive" size="sm" /> : undefined}
           />
         ))}

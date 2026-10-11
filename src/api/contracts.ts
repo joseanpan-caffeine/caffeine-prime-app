@@ -18,39 +18,64 @@ export interface Money {
 
 // ---------- Auth ----------
 
-export interface LoginRequest { email: string; password: string; deviceName?: string }
-export interface SocialLoginRequest { idToken: string; fullName?: string; deviceName?: string }
-export interface MagicLinkRequest { email: string }
-export interface MagicLinkExchangeRequest { token: string; deviceName?: string }
-export interface RefreshRequest { refreshToken: string }
+export interface LoginRequest {
+  email: string;
+  password: string;
+  deviceName?: string;
+}
+export interface SocialLoginRequest {
+  idToken: string;
+  fullName?: string;
+  deviceName?: string;
+}
+export interface MagicLinkRequest {
+  email: string;
+}
+export interface MagicLinkExchangeRequest {
+  token: string;
+  deviceName?: string;
+}
+export interface RefreshRequest {
+  refreshToken: string;
+}
 export interface RegisterRequest {
-  firstName: string; lastName: string; email: string; password: string;
-  cpf: string; phone: string; birthDate: string; // ISO date
+  firstName: string;
+  lastName: string;
+  email: string;
+  password: string;
+  cpf: string;
+  phone: string;
+  birthDate: string; // ISO date
 }
 
 export interface AuthTokens {
-  accessToken: string;   // JWT, 15 min
-  refreshToken: string;  // opaco, 30 dias, rotativo
-  expiresIn: number;     // segundos
+  accessToken: string; // JWT, 15 min
+  refreshToken: string; // opaco, 30 dias, rotativo
+  expiresIn: number; // segundos
 }
 
-export interface AuthResponse extends AuthTokens { user: UserProfile }
+export interface AuthResponse extends AuthTokens {
+  user: UserProfile;
+}
 
 // ---------- Perfil ----------
 
 export interface UserProfile {
-  id: string;            // shopifyCustomerId numérico como string
+  id: string; // shopifyCustomerId numérico como string
   email: string;
   firstName: string;
   lastName: string;
-  cpf?: string;          // mascarado: ***.***.123-45
+  cpf?: string; // mascarado: ***.***.123-45
   phone?: string;
   gender?: string;
   hasSubscription: boolean;
 }
 
 export interface UpdateProfileRequest {
-  firstName?: string; lastName?: string; phone?: string; gender?: string;
+  firstName?: string;
+  lastName?: string;
+  phone?: string;
+  gender?: string;
 }
 
 // ---------- Assinatura ----------
@@ -63,11 +88,11 @@ export interface ProductItem {
   imageUrl?: string;
   sku?: string;
   quantity: number;
-  price: Money;                // preço cheio unitário
-  discountPercentage: number;  // 0–100
-  finalPrice: Money;           // unitário com desconto
+  price: Money; // preço cheio unitário
+  discountPercentage: number; // 0–100
+  finalPrice: Money; // unitário com desconto
   recurrence: ItemRecurrence;
-  cyclesLeft?: number;         // item temporário
+  cyclesLeft?: number; // item temporário
   isGift?: boolean;
 }
 
@@ -81,10 +106,10 @@ export interface Discount {
 
 export interface PaymentProfile {
   id: string;
-  brand: string;          // Visa, Mastercard, Elo…
+  brand: string; // Visa, Mastercard, Elo…
   lastFour: string;
   holderName: string;
-  expiration: string;     // MM/YYYY
+  expiration: string; // MM/YYYY
   isDefault: boolean;
 }
 
@@ -102,16 +127,24 @@ export interface ShippingAddress {
   deliveryEstimateDays?: number;
 }
 
+/**
+ * Origem da pausa (docs/contexto-prime.md §6.2): `User` é pedida pelo cliente e consome 1 crédito
+ * por ciclo; `Offer` é a pausa de retenção oferecida pelo CS, ignora elegibilidade e não consome
+ * crédito. O app só cria pausas `User`.
+ */
+export type PauseType = 'User' | 'Offer';
+
 export interface SubscriptionPause {
   cycles: number;
   remainingCycles: number;
   pausedAt: string;
-  resumeAt: string;       // ISO
+  resumeAt: string; // ISO
+  pauseType?: PauseType; // ausente = 'User'
 }
 
 export interface ScheduledChange {
   id: string;
-  appliesAt: string;      // ISO (= nextBillingAt)
+  appliesAt: string; // ISO (= nextBillingAt)
   frequency: Frequency;
   planName: string;
   items: ProductItem[];
@@ -120,8 +153,18 @@ export interface ScheduledChange {
 }
 
 export interface Subscription {
+  /**
+   * Nunca guardar como permanente: numa troca de plano a Prime API cria uma assinatura nova
+   * (`future`) e cancela a atual, então o id muda (docs/contexto-prime.md §4.3, caso B).
+   */
   id: string;
   status: SubscriptionStatus;
+  /**
+   * Presente só quando a Prime API devolveu um status fora do enum conhecido (o campo lá é
+   * string livre). Nesse caso `status` vem normalizado para 'active' e o app mostra um estado
+   * genérico "Status: {rawStatus}" sem quebrar (docs/contexto-prime.md §8 item 5).
+   */
+  rawStatus?: string;
   frequency: Frequency;
   planName: string;
   startedAt: string;
@@ -143,10 +186,22 @@ export interface Subscription {
 
 // ---------- Faturas / pedidos ----------
 
-export interface TrackingEvent { status: string; description: string; occurredAt: string; location?: string }
+export interface TrackingEvent {
+  status: string;
+  description: string;
+  occurredAt: string;
+  location?: string;
+}
 
 export interface Fulfillment {
-  status: 'pending' | 'processing' | 'shipped' | 'in_transit' | 'out_for_delivery' | 'delivered' | 'failed';
+  status:
+    | 'pending'
+    | 'processing'
+    | 'shipped'
+    | 'in_transit'
+    | 'out_for_delivery'
+    | 'delivered'
+    | 'failed';
   carrier?: string;
   trackingCode?: string;
   trackingUrl?: string;
@@ -156,7 +211,7 @@ export interface Fulfillment {
 
 export interface PixCharge {
   qrCodeImageUrl: string;
-  qrCodeText: string;   // copia e cola
+  qrCodeText: string; // copia e cola
   expiresAt: string;
 }
 
@@ -170,31 +225,72 @@ export interface Bill {
   amount: Money;
   paymentMethod?: 'credit_card' | 'pix';
   paymentProfile?: PaymentProfile;
-  pix?: PixCharge;           // presente se há cobrança PIX pendente
+  pix?: PixCharge; // presente se há cobrança PIX pendente
   items: ProductItem[];
   fulfillment?: Fulfillment;
+  /**
+   * Fatura de ciclo pausado: durante a pausa a Vindi continua gerando uma fatura por ciclo com
+   * valor R$ 0,00 (100% de desconto). É esperado, não é erro; o app mostra "Ciclo pausado"
+   * (docs/contexto-prime.md §5.3).
+   */
+  pausedCycle?: boolean;
 }
 
 // ---------- Capacidades (regras calculadas no servidor) ----------
 
+/**
+ * Razões de bloqueio (regras oficiais em docs/contexto-prime.md §6.1, calculadas no BFF em
+ * America/Sao_Paulo):
+ * - EDIT_WINDOW_CLOSED: edição bloqueada de D-3 00:00 até a cobrança.
+ * - MIN_PAID_CYCLES: pausa só a partir da 4ª cobrança (3 cobranças pagas).
+ * - PAUSE_WINDOW_CLOSED: pedido de pausa só até D-3 da cobrança.
+ * - RESUME_WINDOW_CLOSED: desfazer a pausa só até D-5 da cobrança do ciclo pausado.
+ * - COMMITMENT_ACTIVE: cancelamento travado enquanto há fidelidade restante.
+ * - CANCEL_WINDOW_CLOSED: fidelidade cumprida, mas já é o dia da cobrança seguinte.
+ */
 export type CapabilityReason =
   | 'EDIT_WINDOW_CLOSED'
   | 'SUBSCRIPTION_NOT_ACTIVE'
   | 'FREQUENCY_NOT_ELIGIBLE'
   | 'NO_PAUSE_CREDITS'
+  | 'MIN_PAID_CYCLES'
+  | 'PAUSE_WINDOW_CLOSED'
+  | 'RESUME_WINDOW_CLOSED'
   | 'PENDING_BILL'
   | 'NOT_PAUSED'
   | 'NOT_CANCELED'
   | 'CANCELLATION_BLOCKED'
+  | 'COMMITMENT_ACTIVE'
+  | 'CANCEL_WINDOW_CLOSED'
   | 'UNDER_REVIEW';
 
-export interface Capability { allowed: boolean; reason?: CapabilityReason; until?: string }
+export interface Capability {
+  allowed: boolean;
+  reason?: CapabilityReason;
+  /** Quando bloqueada por janela: instante (ISO, offset de São Paulo) em que a ação reabre. */
+  until?: string;
+  /**
+   * Quando permitida e sujeita a janela: instante (ISO, offset de São Paulo) em que a ação deixa
+   * de ser permitida (ex.: canEdit → D-3 00:00; canResume → D-5 00:00; canCancel com fidelidade
+   * cumprida → 00:00 do dia da cobrança). O app exibe "até {data}" sem calcular prazo localmente.
+   */
+  closesAt?: string;
+}
 
 export interface Capabilities {
   canEdit: Capability;
   canPause: Capability & { creditsLeft?: number; maxCycles?: number };
   canResume: Capability;
-  canCancel: Capability & { remainingCommitmentMonths?: number; earlyWindow?: boolean };
+  canCancel: Capability & {
+    remainingCommitmentMonths?: number;
+    earlyWindow?: boolean;
+    /**
+     * Estimativa (ISO) de quando a fidelidade termina: nextBillingAt + meses restantes.
+     * Ausente para Mensal (sem fidelidade). É estimativa porque o ciclo é de 30 dias, não
+     * um dia fixo do mês (docs/contexto-prime.md §6.3).
+     */
+    commitmentEndsAt?: string;
+  };
   canReactivate: Capability;
   canChangeCard: Capability;
   canChangeAddress: Capability;
@@ -216,7 +312,13 @@ export interface Dashboard {
   banners: Banner[];
 }
 
-export interface Banner { id: string; title: string; subtitle?: string; imageUrl?: string; deepLink?: string }
+export interface Banner {
+  id: string;
+  title: string;
+  subtitle?: string;
+  imageUrl?: string;
+  deepLink?: string;
+}
 
 // ---------- Catálogo ----------
 
@@ -241,7 +343,11 @@ export interface CatalogProduct {
   maxQuantity: number;
 }
 
-export interface DiscountTier { minItems: number; discountPercentage: number; label: string }
+export interface DiscountTier {
+  minItems: number;
+  discountPercentage: number;
+  label: string;
+}
 
 export interface Catalog {
   plans: Plan[];
@@ -252,13 +358,26 @@ export interface Catalog {
 
 // ---------- Edição / agendamento ----------
 
-export interface BoxItemInput { handle: string; quantity: number; recurrence?: ItemRecurrence }
+export interface BoxItemInput {
+  handle: string;
+  quantity: number;
+  recurrence?: ItemRecurrence;
+}
 
-export interface PreviewRequest { frequency: Frequency; items: BoxItemInput[]; couponCode?: string }
+export interface PreviewRequest {
+  frequency: Frequency;
+  items: BoxItemInput[];
+  couponCode?: string;
+}
 
 export interface PricePreview {
   frequency: Frequency;
-  items: (BoxItemInput & { title: string; unitPrice: Money; discountPercentage: number; finalUnitPrice: Money })[];
+  items: (BoxItemInput & {
+    title: string;
+    unitPrice: Money;
+    discountPercentage: number;
+    finalUnitPrice: Money;
+  })[];
   subtotal: Money;
   totalDiscount: Money;
   total: Money;
@@ -273,31 +392,70 @@ export interface SchedulingRequest extends PreviewRequest {
   reason?: string;
 }
 
-export interface PauseRequest { cycles: number; reason: string; answers?: { question: string; answer: string }[] }
-export interface CancelRequest { reason: string; answers?: { question: string; answer: string }[] }
-export interface ReasonOption { code: string; label: string; followUp?: { question: string; options: string[] } }
+export interface PauseRequest {
+  cycles: number;
+  reason: string;
+  answers?: { question: string; answer: string }[];
+}
+export interface CancelRequest {
+  reason: string;
+  answers?: { question: string; answer: string }[];
+}
+export interface ReasonOption {
+  code: string;
+  label: string;
+  followUp?: { question: string; options: string[] };
+}
 
 // ---------- Pagamento ----------
 
-export interface VindiConfig { publicKey: string; apiUrl: string; sandbox: boolean }
-export interface AddCardRequest { gatewayToken: string; paymentCompanyCode?: string; setAsDefault?: boolean }
-export interface PayWithNewCardRequest { gatewayToken: string; paymentCompanyCode?: string }
+export interface VindiConfig {
+  publicKey: string;
+  apiUrl: string;
+  sandbox: boolean;
+}
+export interface AddCardRequest {
+  gatewayToken: string;
+  paymentCompanyCode?: string;
+  setAsDefault?: boolean;
+}
+export interface PayWithNewCardRequest {
+  gatewayToken: string;
+  paymentCompanyCode?: string;
+}
 
 // ---------- Endereço ----------
 
-export interface AddressQuoteRequest { postalCode: string }
+export interface AddressQuoteRequest {
+  postalCode: string;
+}
 export interface AddressQuote {
-  postalCode: string; city: string; state: string; street?: string; neighborhood?: string;
+  postalCode: string;
+  city: string;
+  state: string;
+  street?: string;
+  neighborhood?: string;
   options: { id: string; method: string; carrier: string; estimateDays: number; price: Money }[];
 }
-export interface UpdateAddressRequest extends Omit<ShippingAddress, 'id' | 'deliveryMethod' | 'deliveryEstimateDays'> {
+export interface UpdateAddressRequest
+  extends Omit<ShippingAddress, 'id' | 'deliveryMethod' | 'deliveryEstimateDays'> {
   quoteOptionId: string;
 }
 
 // ---------- Dispositivos / config ----------
 
-export interface RegisterDeviceRequest { expoPushToken: string; platform: 'ios' | 'android'; appVersion: string; deviceName?: string }
-export interface NotificationPreferences { billing: boolean; shipping: boolean; renewal: boolean; marketing: boolean }
+export interface RegisterDeviceRequest {
+  expoPushToken: string;
+  platform: 'ios' | 'android';
+  appVersion: string;
+  deviceName?: string;
+}
+export interface NotificationPreferences {
+  billing: boolean;
+  shipping: boolean;
+  renewal: boolean;
+  marketing: boolean;
+}
 export interface AppConfig {
   minSupportedVersion: string;
   features: Record<string, boolean>;
@@ -306,4 +464,8 @@ export interface AppConfig {
 
 // ---------- Erros ----------
 
-export interface ApiError { code: string; message: string; details?: unknown }
+export interface ApiError {
+  code: string;
+  message: string;
+  details?: unknown;
+}

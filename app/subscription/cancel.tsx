@@ -5,6 +5,7 @@ import { errorMessage } from '@/api/client';
 import { useCancelReasons, useCancelSubscription, useDashboard } from '@/api/hooks';
 import { AlertCard, Button, Card, EmptyState, Screen, Section, SkeletonCard, Text, toast } from '@/components';
 import { ReasonPicker } from '@/features/subscription/ReasonPicker';
+import { formatDate } from '@/lib/format';
 import { capabilityReasonLabel } from '@/lib/labels';
 
 export default function CancelScreen() {
@@ -23,7 +24,7 @@ export default function CancelScreen() {
   if (cap && !cap.allowed) {
     return (
       <Screen>
-        <EmptyState icon="🔒" title="Cancelamento indisponível" description={capabilityReasonLabel(cap.reason, cap.until)} actionLabel="Voltar" onAction={() => router.back()} />
+        <EmptyState icon="🔒" title="Cancelamento indisponível" description={capabilityReasonLabel(cap.reason, cap.until ?? cap.commitmentEndsAt)} actionLabel="Voltar" onAction={() => router.back()} />
       </Screen>
     );
   }
@@ -59,6 +60,9 @@ export default function CancelScreen() {
       subtitle="Antes de ir, conta pra gente o motivo. Isso ajuda a melhorar o Prime."
       footer={<Button title="Cancelar e perder benefícios" variant="danger" onPress={submit} loading={cancel.isPending} disabled={!reason} />}
     >
+      {/* Com a regra oficial (docs/contexto-prime.md §6.1) o BFF só libera o cancelamento com a
+          fidelidade cumprida (ou plano Mensal); este bloco cobre o caso defensivo de `remaining > 0`.
+          A taxa de cancelamento antecipado (§6.4) é aplicada caso a caso pelo CS: o app não a calcula. */}
       {remaining > 0 ? (
         <AlertCard
           variant="paused"
@@ -67,9 +71,14 @@ export default function CancelScreen() {
           onPrimary={dashboard?.capabilities.canPause.allowed ? () => router.replace('/subscription/pause') : undefined}
         >
           <Text variant="body" tone="secondary">
-            Faltam <Text variant="bodyStrong">{remaining} {remaining === 1 ? 'mês' : 'meses'}</Text> para concluir a fidelidade do seu plano
-            {cap?.earlyWindow ? ' e você está na janela de cancelamento antecipado' : ''}. Ao cancelar agora você perde o desconto do plano.
+            Faltam <Text variant="bodyStrong">{remaining} {remaining === 1 ? 'mês' : 'meses'}</Text> para concluir a fidelidade do seu plano. Ao cancelar agora você perde o desconto do plano.
             {dashboard?.capabilities.canPause.allowed ? ' Pausar mantém seus benefícios e não cobra nada enquanto durar.' : ''}
+          </Text>
+        </AlertCard>
+      ) : cap?.closesAt ? (
+        <AlertCard variant="info" title="Fidelidade cumprida">
+          <Text variant="body" tone="secondary">
+            Você pode cancelar até <Text variant="bodyStrong">{formatDate(cap.closesAt)}</Text>. Sem cancelar até essa data, a assinatura renova no ciclo seguinte.
           </Text>
         </AlertCard>
       ) : null}

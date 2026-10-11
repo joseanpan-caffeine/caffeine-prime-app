@@ -8,7 +8,7 @@ import { useBill } from '@/api/hooks';
 import { Badge, Button, Card, EmptyState, Money, ProductImage, Row, Screen, SkeletonCard, Text, toast } from '@/components';
 import { billTone, orderStatusDot } from '@/features/orders/BillCard';
 import { formatDate, formatDateTime } from '@/lib/format';
-import { billStatusLabel, fulfillmentLabel, paymentMethodLabel } from '@/lib/labels';
+import { billStatusLabel, fulfillmentLabel, isPausedCycleBill, paymentMethodLabel } from '@/lib/labels';
 import { formatShortDate } from '@/lib/prime';
 import { colors, radius, space } from '@/theme';
 
@@ -34,15 +34,19 @@ export default function OrderDetail() {
   }
 
   const dot = orderStatusDot(bill);
+  const paused = isPausedCycleBill(bill);
 
   return (
     <Screen onRefresh={refetch} refreshing={isRefetching}>
       <Card>
         <View style={styles.head}>
           <View style={styles.flex1}>
-            <Badge label="Assinatura" tone="orderSubscription" size="sm" />
+            <View style={styles.badges}>
+              <Badge label="Assinatura" tone="orderSubscription" size="sm" />
+              {paused ? <Badge label="Ciclo pausado" tone="paused" size="sm" /> : null}
+            </View>
             <Text variant="heading" style={styles.mt1}>
-              Pedido #{bill.id}
+              {paused ? `Ciclo ${bill.cycle} pausado` : `Pedido #${bill.id}`}
             </Text>
             <View style={styles.statusRow}>
               <View style={[styles.dot, { backgroundColor: dot.color }]} />
@@ -54,8 +58,13 @@ export default function OrderDetail() {
               Data de criação: {formatShortDate(bill.issuedAt, true)} · Ciclo {bill.cycle}
             </Text>
           </View>
-          <Badge label={billStatusLabel[bill.status]} tone={billTone[bill.status]} />
+          <Badge label={paused ? 'Sem cobrança' : billStatusLabel[bill.status]} tone={paused ? 'neutral' : billTone[bill.status]} />
         </View>
+        {paused ? (
+          <Text variant="small" tone="secondary" style={styles.mt2}>
+            Sua assinatura estava pausada neste ciclo: a fatura saiu com valor zero e não houve envio. É o comportamento esperado da pausa, não um erro.
+          </Text>
+        ) : null}
         <Row style={styles.totalRow}>
           <Text variant="body" tone="secondary">
             Total
@@ -76,6 +85,11 @@ export default function OrderDetail() {
         Itens do pedido
       </Text>
       <Card padded={false}>
+        {bill.items.length === 0 ? (
+          <Text variant="small" tone="secondary" style={styles.emptyItems}>
+            {paused ? 'Nenhum item enviado neste ciclo.' : 'Sem itens nesta fatura.'}
+          </Text>
+        ) : null}
         {bill.items.map((item, idx) => (
           <View key={item.id} style={[styles.itemRow, idx < bill.items.length - 1 && styles.itemBorder]}>
             <ProductImage uri={item.imageUrl} handle={item.handle} title={item.title} size={56} bg={colors.subtle} />
@@ -187,6 +201,8 @@ const styles = StyleSheet.create({
   mt2: { marginTop: space(2) },
   mt3: { marginTop: space(3) },
   head: { flexDirection: 'row', alignItems: 'flex-start', gap: space(2) },
+  badges: { flexDirection: 'row', gap: space(1), flexWrap: 'wrap' },
+  emptyItems: { padding: space(3) },
   statusRow: { flexDirection: 'row', alignItems: 'center', gap: space(1.5), marginTop: 2 },
   dot: { width: 8, height: 8, borderRadius: 4 },
   totalRow: { marginTop: space(3), paddingTop: space(3), borderTopWidth: 1, borderTopColor: colors.border },

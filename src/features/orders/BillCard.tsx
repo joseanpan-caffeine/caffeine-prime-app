@@ -3,7 +3,7 @@ import { Ionicons } from '@expo/vector-icons';
 import type { Bill, BillStatus, Fulfillment } from '@/api/contracts';
 import { Badge, Money, ProductImage, Text } from '@/components';
 import type { BadgeTone } from '@/components/Badge';
-import { fulfillmentLabel } from '@/lib/labels';
+import { fulfillmentLabel, isPausedCycleBill } from '@/lib/labels';
 import { formatShortDate } from '@/lib/prime';
 import { colors, radius, shadows, space } from '@/theme';
 
@@ -11,6 +11,8 @@ export const billTone: Record<BillStatus, BadgeTone> = { pending: 'pending', pai
 
 /** Cor do ponto de status (Figma Pedido): amarelo em andamento, vermelho cancelado, verde entregue. */
 export function orderStatusDot(bill: Bill): { color: string; label: string } {
+  // Fatura R$ 0,00 de ciclo pausado: não há pedido nem envio; é o comportamento esperado da pausa.
+  if (isPausedCycleBill(bill)) return { color: colors.textMuted, label: 'Sem envio neste ciclo' };
   if (bill.status === 'canceled') return { color: colors.danger, label: 'Cancelado' };
   if (bill.status === 'pending') return { color: colors.warning, label: 'Aguardando pagamento' };
   if (bill.status === 'review') return { color: colors.warning, label: 'Pagamento em análise' };
@@ -27,6 +29,7 @@ export function BillCard({ bill, onPress }: { bill: Bill; onPress: () => void })
   const units = bill.items.reduce((n, i) => n + i.quantity, 0);
   const first = bill.items[0];
   const dot = orderStatusDot(bill);
+  const paused = isPausedCycleBill(bill);
   return (
     <Pressable onPress={onPress} accessibilityRole="button" style={({ pressed }) => [styles.card, shadows.card, pressed && styles.pressed]}>
       <View style={styles.thumbWrap}>
@@ -40,9 +43,12 @@ export function BillCard({ bill, onPress }: { bill: Bill; onPress: () => void })
         ) : null}
       </View>
       <View style={styles.body}>
-        <Badge label="Assinatura" tone="orderSubscription" size="sm" />
+        <View style={styles.badges}>
+          <Badge label="Assinatura" tone="orderSubscription" size="sm" />
+          {paused ? <Badge label="Ciclo pausado" tone="paused" size="sm" /> : null}
+        </View>
         <Text variant="bodyStrong" numberOfLines={1}>
-          Pedido #{bill.id}
+          {paused ? `Ciclo ${bill.cycle} pausado` : `Pedido #${bill.id}`}
         </Text>
         <View style={styles.statusRow}>
           <View style={[styles.dot, { backgroundColor: dot.color }]} />
@@ -66,6 +72,7 @@ const styles = StyleSheet.create({
   thumbWrap: { position: 'relative' },
   count: { position: 'absolute', right: -6, bottom: -6, width: 22, height: 22, borderRadius: 11, backgroundColor: colors.muted, borderWidth: 2, borderColor: colors.surface, alignItems: 'center', justifyContent: 'center' },
   body: { flex: 1, gap: 3 },
+  badges: { flexDirection: 'row', gap: space(1), flexWrap: 'wrap' },
   statusRow: { flexDirection: 'row', alignItems: 'center', gap: space(1.5) },
   dot: { width: 8, height: 8, borderRadius: 4 },
 });

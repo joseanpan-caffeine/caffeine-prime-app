@@ -26,6 +26,8 @@ export interface NextBoxGift {
 
 interface NextBoxCardProps {
   paymentDateLabel: string;
+  /** Legenda acima da data ("Próxima cobrança" = data real da API; "Data estimada" = previsão). */
+  paymentDateCaption?: string;
   totalLabel: string;
   items: NextBoxItem[];
   gifts?: NextBoxGift[];
@@ -48,6 +50,7 @@ interface NextBoxCardProps {
  */
 export function NextBoxCard({
   paymentDateLabel,
+  paymentDateCaption = 'Data de pagamento',
   totalLabel,
   items,
   gifts = [],
@@ -70,7 +73,7 @@ export function NextBoxCard({
       <View style={styles.top}>
         <View style={styles.topCol}>
           <Text variant="caption" tone={mutedTone}>
-            Data de pagamento
+            {paymentDateCaption}
           </Text>
           <Text variant="bodyStrong" tone={textTone}>
             {paymentDateLabel}

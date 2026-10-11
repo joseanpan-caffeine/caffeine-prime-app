@@ -140,7 +140,7 @@ export default function Profile() {
         />
         <SectionRow icon="time-outline" title="Histórico de pedidos" onPress={() => router.push('/(tabs)/orders')} />
         {sub?.status === 'paused' ? <SectionRow icon="play-outline" title="Retomar assinatura" onPress={() => router.push('/subscription/paused')} /> : null}
-        {caps?.canPause.allowed ? <SectionRow icon="pause-outline" title="Pausar assinatura" subtitle={`Você tem ${caps.canPause.creditsLeft ?? 0} ${(caps.canPause.creditsLeft ?? 0) === 1 ? 'pausa disponível' : 'pausas disponíveis'}`} onPress={() => router.push('/subscription/pause')} /> : null}
+        {caps?.canPause.allowed ? <SectionRow icon="pause-outline" title="Pausar assinatura" subtitle={`Você tem ${caps.canPause.creditsLeft ?? 0} ${(caps.canPause.creditsLeft ?? 0) === 1 ? 'crédito de pausa' : 'créditos de pausa'}`} onPress={() => router.push('/subscription/pause')} /> : null}
         {sub?.status === 'canceled' ? <SectionRow icon="refresh-outline" title="Reativar assinatura" onPress={() => router.push('/subscription/canceled')} /> : null}
         {caps?.canCancel.allowed ? <SectionRow icon="close-circle-outline" title="Cancelar e perder benefícios" danger onPress={() => router.push('/subscription/cancel')} last /> : <View />}
       </SectionList>

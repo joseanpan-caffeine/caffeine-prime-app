@@ -2,7 +2,7 @@
  * Derivações de apresentação a partir dos contratos (sem regra de negócio nova —
  * só formatação e inferências visuais do painel Prime).
  */
-import type { Capabilities, Frequency, Subscription, SubscriptionStatus } from '@/api/contracts';
+import type { Capabilities, Capability, Frequency, Subscription } from '@/api/contracts';
 import type { BadgeTone } from '@/components/Badge';
 import { daysUntil, parseDate } from './format';
 
@@ -29,11 +29,14 @@ export function planBadgeLabel(frequency: Frequency | undefined): string {
   return frequency ? `Prime ${frequency}` : 'Prime';
 }
 
-export const commitmentMonths: Record<Frequency, number> = { Mensal: 1, Trimestral: 3, Semestral: 6, Anual: 12 };
-
-export function statusBadge(status: SubscriptionStatus | undefined, caps?: Capabilities): { label: string; tone: BadgeTone } {
+/**
+ * Badge de status do painel. Status fora do enum conhecido (string livre na Prime API) vem com
+ * `rawStatus` e vira um badge neutro "Status: {raw}" — a navegação continua normal.
+ */
+export function statusBadge(sub: Pick<Subscription, 'status' | 'rawStatus'> | null | undefined, caps?: Capabilities): { label: string; tone: BadgeTone } {
   if (caps?.hasPendingBill) return { label: 'Pagamento pendente', tone: 'pending' };
-  switch (status) {
+  if (sub?.rawStatus) return { label: `Status: ${sub.rawStatus}`, tone: 'neutral' };
+  switch (sub?.status) {
     case 'active':
       return { label: 'Assinatura ativa', tone: 'active' };
     case 'future':
@@ -49,13 +52,17 @@ export function statusBadge(status: SubscriptionStatus | undefined, caps?: Capab
   }
 }
 
-/** Data-limite de edição: `canEdit.until` do servidor ou 3 dias antes da cobrança. */
-export function editUntilIso(sub: Pick<Subscription, 'nextBillingAt'>, caps?: Pick<Capabilities, 'canEdit'>): string | undefined {
-  if (caps?.canEdit.until) return caps.canEdit.until;
-  const d = parseDate(sub.nextBillingAt);
-  if (!d) return undefined;
-  d.setDate(d.getDate() - 3);
-  return d.toISOString();
+/**
+ * Data-limite de edição, sempre vinda do servidor (`canEdit.closesAt` quando aberta; `until`
+ * quando fechada). O app não calcula D-3 no aparelho: a regra é do BFF, em America/Sao_Paulo.
+ */
+export function editUntilIso(_sub: Pick<Subscription, 'nextBillingAt'>, caps?: Pick<Capabilities, 'canEdit'>): string | undefined {
+  return capabilityDeadline(caps?.canEdit);
+}
+
+/** Prazo exibível de uma capability: `closesAt` (aberta) ou `until` (fechada). */
+export function capabilityDeadline(cap: Capability | undefined): string | undefined {
+  return cap?.closesAt ?? cap?.until ?? undefined;
 }
 
 export function addMonths(iso: string, months: number): string | undefined {
@@ -69,20 +76,35 @@ export function addMonths(iso: string, months: number): string | undefined {
   return d.toISOString();
 }
 
-/** Próximas datas de cobrança (a atual + `count` seguintes, cadência mensal). */
-export function upcomingBillingDates(sub: Subscription, count = 2): string[] {
-  const dates = [sub.nextBillingAt];
-  for (let i = 1; i <= count; i++) {
-    const next = addMonths(sub.nextBillingAt, i);
-    if (next) dates.push(next);
-  }
-  return dates;
+export interface UpcomingBilling {
+  date: string;
+  /** `true` só para a primeira: é o `nextBillingAt` real da API. As demais são previsão. */
+  confirmed: boolean;
 }
 
-/** Fração 0–1 da vigência já cumprida. */
-export function commitmentProgress(sub: Subscription, totalMonths?: number): number {
-  const total = totalMonths ?? commitmentMonths[sub.frequency];
-  if (!total || sub.remainingCommitmentMonths < 0) return 1;
+/**
+ * Próximas cobranças: a primeira é a data real (`nextBillingAt`); as seguintes são PREVISÃO.
+ * O ciclo do Prime é de 30 dias, não um dia fixo do mês (docs/contexto-prime.md §6.3), então
+ * nunca derivar "todo dia X" nem tratar as datas estimadas como confirmadas.
+ */
+export function upcomingBillings(sub: Pick<Subscription, 'nextBillingAt'>, count = 2): UpcomingBilling[] {
+  const list: UpcomingBilling[] = [{ date: sub.nextBillingAt, confirmed: true }];
+  const base = parseDate(sub.nextBillingAt);
+  if (!base) return list;
+  for (let i = 1; i <= count; i++) {
+    list.push({ date: new Date(base.getTime() + i * 30 * 86_400_000).toISOString(), confirmed: false });
+  }
+  return list;
+}
+
+/**
+ * Fração 0–1 da vigência já cumprida. `totalMonths` vem do plano no catálogo da API; sem ele,
+ * estima pelo que a assinatura informa (ciclos pagos + meses restantes). Nada fixo por plano.
+ */
+export function commitmentProgress(sub: Pick<Subscription, 'remainingCommitmentMonths' | 'paidCycles'>, totalMonths?: number): number {
+  if (sub.remainingCommitmentMonths < 0) return 1;
+  const total = totalMonths && totalMonths > 0 ? totalMonths : sub.paidCycles + sub.remainingCommitmentMonths;
+  if (!total) return 1;
   const remaining = Math.max(0, Math.min(total, sub.remainingCommitmentMonths));
   return (total - remaining) / total;
 }

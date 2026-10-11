@@ -35,7 +35,7 @@ import {
 import { QuickActions, SavingsStrip, WelcomeCard } from '@/components/WelcomeCard';
 import { formatDate, formatMoney } from '@/lib/format';
 import { capabilityReasonLabel, fulfillmentLabel } from '@/lib/labels';
-import { commitmentMonths, commitmentProgress, editUntilIso, formatDayMonth, formatShortDate, planBadgeLabel, statusBadge, upcomingBillingDates } from '@/lib/prime';
+import { capabilityDeadline, commitmentProgress, editUntilIso, formatDayMonth, formatShortDate, planBadgeLabel, statusBadge, upcomingBillings } from '@/lib/prime';
 import { signOut } from '@/lib/session';
 import { useAuthStore } from '@/store/auth';
 import { colors, radius, space } from '@/theme';
@@ -85,7 +85,7 @@ export default function Home() {
 
   const sub = data.subscription;
   const caps = data.capabilities;
-  const status = statusBadge(sub?.status, caps);
+  const status = statusBadge(sub, caps);
 
   function onUndo() {
     Alert.alert('Desfazer mudança', 'A mudança agendada será descartada e sua caixa atual continua como está.', [
@@ -182,7 +182,13 @@ export default function Home() {
             <SectionRow
               icon="options-outline"
               title="Editar próxima caixa"
-              subtitle={caps.canEdit.allowed ? `Edite até o dia ${formatShortDate(editUntilIso(sub, caps), true)}` : capabilityReasonLabel(caps.canEdit.reason, caps.canEdit.until)}
+              subtitle={
+                caps.canEdit.allowed
+                  ? editUntilIso(sub, caps)
+                    ? `Edite até o dia ${formatShortDate(editUntilIso(sub, caps), true)}`
+                    : 'Edição liberada'
+                  : capabilityReasonLabel(caps.canEdit.reason, caps.canEdit.until)
+              }
               onPress={() => router.push('/(tabs)/box')}
             />
             <SectionRow
@@ -194,13 +200,15 @@ export default function Home() {
                   <PlanDetails
                     planLabel={sub.frequency}
                     sinceLabel={formatShortDate(sub.startedAt, true)}
-                    progress={commitmentProgress(sub, catalog.data?.plans.find((p) => p.frequency === sub.frequency)?.commitmentMonths || commitmentMonths[sub.frequency])}
+                    progress={commitmentProgress(sub, catalog.data?.plans.find((p) => p.frequency === sub.frequency)?.commitmentMonths)}
                     remainingLabel={
                       sub.remainingCommitmentMonths < 0
                         ? 'Plano sem fidelidade.'
                         : sub.remainingCommitmentMonths === 0
                           ? 'Vigência concluída.'
-                          : `Restam ${sub.remainingCommitmentMonths} ${sub.remainingCommitmentMonths === 1 ? 'mês' : 'meses'} para finalizar sua vigência`
+                          : `Restam ${sub.remainingCommitmentMonths} ${sub.remainingCommitmentMonths === 1 ? 'mês' : 'meses'} para finalizar sua vigência${
+                              caps.canCancel.commitmentEndsAt ? ` (previsão: ${formatShortDate(caps.canCancel.commitmentEndsAt, true)})` : ''
+                            }`
                     }
                   />
                 ) : undefined
@@ -209,7 +217,21 @@ export default function Home() {
             <SectionRow icon="cube-outline" title="Itens que assino" subtitle="Edite os itens da sua assinatura" onPress={() => router.push('/(tabs)/box')} />
             <SectionRow icon="time-outline" title="Histórico de pedidos" onPress={() => router.push('/(tabs)/orders')} />
             {sub.status === 'paused' ? (
-              <SectionRow icon="play-outline" title="Retomar assinatura" subtitle={sub.pause ? `Retoma em ${formatDate(sub.pause.resumeAt)}` : undefined} onPress={() => router.push('/subscription/paused')} last />
+              <SectionRow
+                icon="play-outline"
+                title="Retomar assinatura"
+                subtitle={
+                  caps.canResume.allowed
+                    ? capabilityDeadline(caps.canResume)
+                      ? `Desfaça a pausa até ${formatShortDate(capabilityDeadline(caps.canResume), true)}${sub.pause ? ` · retoma em ${formatDate(sub.pause.resumeAt)}` : ''}`
+                      : sub.pause
+                        ? `Retoma em ${formatDate(sub.pause.resumeAt)}`
+                        : undefined
+                    : capabilityReasonLabel(caps.canResume.reason, caps.canResume.until)
+                }
+                onPress={() => router.push('/subscription/paused')}
+                last
+              />
             ) : sub.status === 'canceled' ? (
               <SectionRow icon="refresh-outline" title="Reativar assinatura" onPress={() => router.push('/subscription/canceled')} last />
             ) : (
@@ -218,7 +240,9 @@ export default function Home() {
                 title="Pausar assinatura"
                 subtitle={
                   caps.canPause.allowed
-                    ? `Você tem ${caps.canPause.creditsLeft ?? sub.pauseCreditsLeft} ${(caps.canPause.creditsLeft ?? sub.pauseCreditsLeft) === 1 ? 'pausa disponível' : 'pausas disponíveis'}`
+                    ? `Você tem ${caps.canPause.creditsLeft ?? sub.pauseCreditsLeft} ${(caps.canPause.creditsLeft ?? sub.pauseCreditsLeft) === 1 ? 'crédito de pausa' : 'créditos de pausa'}${
+                        capabilityDeadline(caps.canPause) ? ` · peça até ${formatShortDate(capabilityDeadline(caps.canPause), true)}` : ''
+                      }`
                     : capabilityReasonLabel(caps.canPause.reason, caps.canPause.until)
                 }
                 disabled={!caps.canPause.allowed}
@@ -243,12 +267,10 @@ export default function Home() {
             danger
             subtitle={
               caps.canCancel.allowed
-                ? caps.canCancel.earlyWindow
-                  ? 'Você está na janela de cancelamento antecipado'
-                  : 'Cancele gratuitamente'
-                : (caps.canCancel.remainingCommitmentMonths ?? sub.remainingCommitmentMonths) > 0
-                  ? `Você poderá cancelar após ${caps.canCancel.remainingCommitmentMonths ?? sub.remainingCommitmentMonths} pagamentos`
-                  : capabilityReasonLabel(caps.canCancel.reason, caps.canCancel.until)
+                ? capabilityDeadline(caps.canCancel)
+                  ? `Fidelidade cumprida. Cancele até ${formatShortDate(capabilityDeadline(caps.canCancel), true)}; depois disso a assinatura renova.`
+                  : 'Fidelidade cumprida. Você pode cancelar quando quiser.'
+                : capabilityReasonLabel(caps.canCancel.reason, caps.canCancel.until ?? caps.canCancel.commitmentEndsAt)
             }
             disabled={!caps.canCancel.allowed}
             onPress={() => router.push('/subscription/cancel')}
@@ -297,6 +319,15 @@ function Alerts({ sub, data, onUndo, undoing }: { sub: Subscription; data: Dashb
           </Text>
           <Text variant="body" tone="secondary">
             O próximo pagamento será efetivado automaticamente em {formatShortDate(sub.pause.resumeAt, true)}.
+          </Text>
+        </AlertCard>
+      ) : null}
+
+      {sub.rawStatus ? (
+        // Status fora do enum conhecido (string livre na Prime API): aviso neutro, sem travar a tela.
+        <AlertCard variant="info" title={`Status: ${sub.rawStatus}`}>
+          <Text variant="body" tone="secondary">
+            Sua assinatura está em um estado que o app ainda não reconhece. Você continua podendo navegar; se precisar de ajuda, fale com nossos especialistas.
           </Text>
         </AlertCard>
       ) : null}
@@ -428,20 +459,29 @@ function NextBoxes({ sub, caps, catalog }: { sub: Subscription; caps: Capabiliti
   const gifts = sub.items.filter((i) => i.isGift);
   const items: NextBoxItem[] = products.map((i) => ({ id: i.id, handle: i.handle, title: i.title, subtitle: i.flavor, imageUrl: i.imageUrl, quantity: i.quantity }));
   const giftList: NextBoxGift[] = gifts.map((g) => ({ id: g.id, handle: g.handle, title: g.title, imageUrl: g.imageUrl ?? catalog?.gifts.find((c) => c.handle === g.handle)?.imageUrl }));
-  const dates = upcomingBillingDates(sub, 2);
+  // A primeira data é o `nextBillingAt` real da API; as seguintes são previsão (ciclo de 30 dias,
+  // sem dia fixo do mês — docs/contexto-prime.md §6.3). Nunca derivar "todo dia X".
+  const upcoming = upcomingBillings(sub, 2);
   const editUntil = editUntilIso(sub, caps);
   const pending = caps.hasPendingBill;
 
   return (
-    <Carousel title="Minhas próximas caixas" subtitle="Acompanhe seus pedidos mês a mês" icon="cube-outline" itemWidth={CARD_WIDTH} inset={space(4)}>
-      {dates.map((date, idx) => (
+    <Carousel
+      title="Minhas próximas caixas"
+      subtitle="A cobrança acontece a cada ciclo de 30 dias, não em um dia fixo do mês."
+      icon="cube-outline"
+      itemWidth={CARD_WIDTH}
+      inset={space(4)}
+    >
+      {upcoming.map(({ date, confirmed }, idx) => (
         <NextBoxCard
           key={date}
-          paymentDateLabel={formatDayMonth(date)}
+          paymentDateLabel={confirmed ? formatDayMonth(date) : `Previsão: ${formatDayMonth(date)}`}
+          paymentDateCaption={confirmed ? 'Próxima cobrança' : 'Data estimada'}
           totalLabel={formatMoney(idx === 0 && sub.scheduledChange ? sub.scheduledChange.total : sub.total)}
           items={idx === 0 && sub.scheduledChange ? sub.scheduledChange.items.filter((i) => !i.isGift).map((i) => ({ id: i.id, title: i.title, subtitle: i.flavor, imageUrl: i.imageUrl, quantity: i.quantity })) : items}
           gifts={giftList}
-          editUntilLabel={idx === 0 ? formatShortDate(editUntil) : undefined}
+          editUntilLabel={idx === 0 && editUntil ? formatShortDate(editUntil) : undefined}
           canEdit={caps.canEdit.allowed}
           pendingPayment={idx === 0 && pending}
           readOnly={idx > 0}
@@ -523,28 +563,23 @@ function Benefits({ data, catalog }: { data: Dashboard; catalog?: Catalog }) {
       </Text>
       <SectionHeader iconNode={<CaffeineXIcon size={20} />} title="Programa de pontos: Caffeine Army X" />
       <Text variant="small" tone="secondary" style={styles.benefitsSub}>
-        Você possui <Text variant="smallStrong">{data.wallet.points.toLocaleString('pt-BR')} pontos</Text>.{gifts.length > 0 ? ' Confira os itens que você já pode resgatar:' : ''}
+        Você possui <Text variant="smallStrong">{data.wallet.points.toLocaleString('pt-BR')} pontos</Text>.{gifts.length > 0 ? ' Brindes do Prime:' : ''}
       </Text>
       {gifts.length > 0 ? (
         <Carousel itemWidth={150} inset={space(4)} arrows={false}>
-          {gifts.map((g, i) => {
-            const cost = 300 + ((i * 199) % 700); // custo em pontos: a API ainda não expõe
-            return (
-              <View key={g.handle} style={styles.giftCard}>
-                <ProductImage uri={g.imageUrl} handle={g.handle} title={g.title} width={126} height={110} bg={colors.subtle} />
-                <Text variant="bodyStrong" numberOfLines={1}>
-                  {g.title}
-                </Text>
-                <Text variant="caption" tone="purple">
-                  <Text variant="captionStrong" tone="purple">
-                    {cost} pts
-                  </Text>{' '}
-                  para resgate
-                </Text>
-                <Button title="Resgatar" variant="purple" size="sm" onPress={() => toast.info('Resgate de brindes disponível em breve no app.')} disabled={data.wallet.points < cost} />
-              </View>
-            );
-          })}
+          {/* O custo em pontos de cada brinde ainda não vem da API: não inventar valores aqui. */}
+          {gifts.map((g) => (
+            <View key={g.handle} style={styles.giftCard}>
+              <ProductImage uri={g.imageUrl} handle={g.handle} title={g.title} width={126} height={110} bg={colors.subtle} />
+              <Text variant="bodyStrong" numberOfLines={1}>
+                {g.title}
+              </Text>
+              <Text variant="caption" tone="purple">
+                Resgate pelo Caffeine Army X
+              </Text>
+              <Button title="Resgatar" variant="purple" size="sm" onPress={() => toast.info('Resgate de brindes disponível em breve no app.')} />
+            </View>
+          ))}
         </Carousel>
       ) : null}
     </View>

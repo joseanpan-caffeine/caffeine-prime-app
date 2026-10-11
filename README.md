@@ -25,14 +25,16 @@ Outros scripts: `npm run typecheck` (tsc), `npm run lint` (eslint via `expo lint
 | E-mail | Cenário |
 |---|---|
 | ativa@teste.com | Anual, ativa, 2 créditos de pausa, cobrança em 12 dias, pedido em trânsito |
-| janela@teste.com | Semestral, cobrança amanhã (janela D-2 fechada → edição bloqueada) |
-| pausada@teste.com | Anual, pausada, retoma em 2 ciclos |
+| janela@teste.com | Semestral, cobrança amanhã (janela D-3 fechada → edição e pedido de pausa bloqueados) |
+| pausada@teste.com | Anual, pausada: 1 ciclo já faturado em R$ 0,00 ("Ciclo pausado" no histórico), falta 1 |
 | pendente@teste.com | Trimestral, fatura pendente com PIX |
 | agendada@teste.com | Anual, com mudança agendada (botão "Desfazer") |
 | cancelada@teste.com | cancelada há 20 dias (pode reativar) |
 | analise@teste.com | fraud_review → tela "Em análise" |
 | mensal@teste.com | Mensal, sem créditos de pausa |
 | semassinatura@teste.com | cliente sem assinatura → tela "Sem assinatura" |
+| novata@teste.com | Anual com 1 cobrança paga → pausa "Disponível a partir da 4ª cobrança paga" |
+| fim-fidelidade@teste.com | Anual com fidelidade cumprida → pode cancelar até a véspera da cobrança |
 
 ### Modo fake (`EXPO_PUBLIC_FAKE_AUTH=1`)
 
@@ -85,7 +87,7 @@ scripts/generate-icons.mjs  gera os PNGs placeholder
 
 ### Regras que o app NÃO reimplementa
 
-Tudo que é regra de negócio (janela D-2, créditos de pausa, elegibilidade de cancelamento, melhor desconto) vem do BFF em `dashboard.capabilities`. O app só exibe `allowed: false` com o motivo (`src/lib/labels.ts → capabilityReasonLabel`) e desabilita o CTA.
+Tudo que é regra de negócio (janelas D-3/D-5 em America/Sao_Paulo, pausa a partir da 4ª cobrança, créditos de pausa, trava de fidelidade, melhor desconto) vem do BFF em `dashboard.capabilities` (`allowed`, `reason`, `until`, `closesAt`). O app só exibe `allowed: false` com o motivo (`src/lib/labels.ts → capabilityReasonLabel`) e desabilita o CTA.
 
 ### Suposições sobre o contrato (confirmar com o BFF)
 

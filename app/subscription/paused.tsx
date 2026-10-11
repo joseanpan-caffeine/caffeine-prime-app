@@ -55,6 +55,11 @@ export default function PausedScreen() {
             O próximo pagamento será efetivado automaticamente em <Text variant="bodyStrong">{formatShortDate(sub.pause.resumeAt, true)}</Text> ({describeDaysUntil(sub.pause.resumeAt)}).
           </Text>
         ) : null}
+        {cap?.allowed && cap.closesAt ? (
+          <Text variant="small" tone="secondary">
+            Você pode desfazer a pausa até <Text variant="smallStrong">{formatShortDate(cap.closesAt, true)}</Text> (5 dias antes da cobrança).
+          </Text>
+        ) : null}
       </AlertCard>
       <Card>
         {sub.pause ? (
@@ -90,7 +95,7 @@ export default function PausedScreen() {
         </Card>
       ) : null}
       <Text variant="caption" tone="dim" center>
-        Ao retomar, a próxima cobrança acontece no ciclo seguinte com a sua caixa atual.
+        Durante a pausa, cada ciclo gera uma fatura de R$ 0,00 sem envio — é o esperado. Ao retomar, a próxima cobrança acontece no ciclo seguinte com a sua caixa atual.
       </Text>
     </Screen>
   );
