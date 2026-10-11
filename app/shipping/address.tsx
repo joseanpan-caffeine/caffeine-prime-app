@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -7,10 +7,10 @@ import { z } from 'zod';
 import type { AddressQuote } from '@/api/contracts';
 import { errorMessage } from '@/api/client';
 import { useDashboard, useQuoteAddress, useShippingAddress, useUpdateAddress } from '@/api/hooks';
-import { Button, Card, Input, Money, Row, Screen, Section, SkeletonCard, Text, toast } from '@/components';
+import { AlertCard, Button, Card, Input, Money, RadioRow, Screen, Section, SkeletonCard, Text, toast } from '@/components';
 import { maskCep, onlyDigits } from '@/lib/format';
 import { capabilityReasonLabel } from '@/lib/labels';
-import { colors, radius, space } from '@/theme';
+import { space } from '@/theme';
 
 const schema = z.object({
   recipient: z.string().trim().min(3, 'Informe quem recebe'),
@@ -104,11 +104,9 @@ export default function AddressScreen() {
   return (
     <Screen keyboard title="Endereço de entrega" subtitle="Informe o CEP para cotar o frete e confirmar o endereço.">
       {blocked && cap ? (
-        <Card tone="accent">
-          <Text variant="small" tone="muted">
-            {capabilityReasonLabel(cap.reason, cap.until)}
-          </Text>
-        </Card>
+        <AlertCard variant="why_cant_edit" title="Troca de endereço indisponível">
+          {capabilityReasonLabel(cap.reason, cap.until)}
+        </AlertCard>
       ) : null}
 
       {current.isLoading ? (
@@ -156,21 +154,17 @@ export default function AddressScreen() {
                 </Text>
               </Card>
             ) : null}
-            {quoteData.options.map((o) => {
-              const active = o.id === optionId;
-              return (
-                <Pressable key={o.id} onPress={() => setOptionId(o.id)} accessibilityRole="radio" accessibilityState={{ selected: active }} style={[styles.option, active && styles.optionOn]}>
-                  <View style={[styles.radio, active && styles.radioOn]} />
-                  <View style={styles.flex1}>
-                    <Text variant="bodyStrong">{o.method}</Text>
-                    <Text variant="caption" tone="muted">
-                      {o.carrier} · até {o.estimateDays} dias úteis
-                    </Text>
-                  </View>
-                  <Money value={o.price} variant="small" tone={o.price.amount === 0 ? 'success' : 'default'} />
-                </Pressable>
-              );
-            })}
+            {quoteData.options.map((o) => (
+              <RadioRow
+                key={o.id}
+                boxed
+                label={o.method}
+                hint={`${o.carrier} · até ${o.estimateDays} dias úteis`}
+                selected={o.id === optionId}
+                onPress={() => setOptionId(o.id)}
+                right={<Money value={o.price} variant="smallStrong" tone={o.price.amount === 0 ? 'successText' : 'default'} />}
+              />
+            ))}
           </Section>
 
           <Section title="3. Endereço">
@@ -193,11 +187,9 @@ export default function AddressScreen() {
                 <Controller control={control} name="state" render={({ field: { onChange, onBlur, value } }) => <Input label="UF" value={value} onChangeText={(t) => onChange(t.toUpperCase().slice(0, 2))} onBlur={onBlur} autoCapitalize="characters" error={err.state?.message} />} />
               </View>
             </View>
-            <Row style={styles.summary}>
-              <Text variant="small" tone="muted">
-                CEP {maskCep(quoteData.postalCode)}
-              </Text>
-            </Row>
+            <Text variant="small" tone="muted" style={styles.summary}>
+              CEP {maskCep(quoteData.postalCode)}
+            </Text>
             <Button title="Salvar endereço" onPress={onSubmit} loading={update.isPending} disabled={blocked || !optionId} />
           </Section>
         </>
@@ -210,9 +202,5 @@ const styles = StyleSheet.create({
   flex1: { flex: 1 },
   row: { flexDirection: 'row', gap: space(3) },
   third: { width: 110 },
-  option: { flexDirection: 'row', alignItems: 'center', gap: space(3), padding: space(3), borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, marginBottom: space(2) },
-  optionOn: { borderColor: colors.accent, backgroundColor: colors.accentSoft },
-  radio: { width: 20, height: 20, borderRadius: 10, borderWidth: 2, borderColor: colors.borderStrong },
-  radioOn: { borderColor: colors.accent, backgroundColor: colors.accent },
   summary: { marginBottom: space(3) },
 });

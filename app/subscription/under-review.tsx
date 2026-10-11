@@ -2,7 +2,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import { useAppConfig, useDashboard } from '@/api/hooks';
-import { Button, EmptyState, Screen } from '@/components';
+import { Button, EmptyState, Logo, Screen } from '@/components';
 import { signOut } from '@/lib/session';
 
 export default function UnderReview() {
@@ -18,6 +18,7 @@ export default function UnderReview() {
 
   return (
     <Screen scroll={false} safeTop>
+      <Logo style={{ alignSelf: 'center', marginTop: 8 }} />
       <EmptyState
         icon="🔎"
         title="Assinatura em análise"

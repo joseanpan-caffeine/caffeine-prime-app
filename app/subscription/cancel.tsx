@@ -3,7 +3,7 @@ import { Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { errorMessage } from '@/api/client';
 import { useCancelReasons, useCancelSubscription, useDashboard } from '@/api/hooks';
-import { Button, Card, EmptyState, Screen, Section, SkeletonCard, Text, toast } from '@/components';
+import { AlertCard, Button, Card, EmptyState, Screen, Section, SkeletonCard, Text, toast } from '@/components';
 import { ReasonPicker } from '@/features/subscription/ReasonPicker';
 import { capabilityReasonLabel } from '@/lib/labels';
 
@@ -57,19 +57,21 @@ export default function CancelScreen() {
     <Screen
       title="Cancelar assinatura"
       subtitle="Antes de ir, conta pra gente o motivo. Isso ajuda a melhorar o Prime."
-      footer={<Button title="Cancelar assinatura" variant="danger" onPress={submit} loading={cancel.isPending} disabled={!reason} />}
+      footer={<Button title="Cancelar e perder benefícios" variant="danger" onPress={submit} loading={cancel.isPending} disabled={!reason} />}
     >
       {remaining > 0 ? (
-        <Card tone="accent" title="Que tal pausar em vez de cancelar?">
-          <Text variant="small" tone="muted">
-            Faltam {remaining} {remaining === 1 ? 'mês' : 'meses'} para concluir a fidelidade do seu plano
+        <AlertCard
+          variant="paused"
+          title="Que tal pausar em vez de cancelar?"
+          primaryLabel={dashboard?.capabilities.canPause.allowed ? 'Prefiro pausar' : undefined}
+          onPrimary={dashboard?.capabilities.canPause.allowed ? () => router.replace('/subscription/pause') : undefined}
+        >
+          <Text variant="body" tone="secondary">
+            Faltam <Text variant="bodyStrong">{remaining} {remaining === 1 ? 'mês' : 'meses'}</Text> para concluir a fidelidade do seu plano
             {cap?.earlyWindow ? ' e você está na janela de cancelamento antecipado' : ''}. Ao cancelar agora você perde o desconto do plano.
             {dashboard?.capabilities.canPause.allowed ? ' Pausar mantém seus benefícios e não cobra nada enquanto durar.' : ''}
           </Text>
-          {dashboard?.capabilities.canPause.allowed ? (
-            <Button title="Prefiro pausar" variant="secondary" size="sm" onPress={() => router.replace('/subscription/pause')} style={{ marginTop: 12 }} />
-          ) : null}
-        </Card>
+        </AlertCard>
       ) : null}
 
       <Section title="Motivo">

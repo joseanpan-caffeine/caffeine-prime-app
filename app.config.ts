@@ -8,8 +8,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   orientation: 'portrait',
   scheme: 'caffeineprime',
   icon: './assets/icon.png',
-  userInterfaceStyle: 'dark',
-  backgroundColor: '#0E0B09',
+  userInterfaceStyle: 'light',
+  backgroundColor: '#F3F3F3',
   ios: {
     bundleIdentifier: 'com.caffeinearmy.prime',
     supportsTablet: false,
@@ -21,7 +21,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   android: {
     package: 'com.caffeinearmy.prime',
     adaptiveIcon: {
-      backgroundColor: '#0E0B09',
+      backgroundColor: '#260F0F',
       foregroundImage: './assets/android-icon-foreground.png',
       backgroundImage: './assets/android-icon-background.png',
       monochromeImage: './assets/android-icon-monochrome.png',
@@ -46,7 +46,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     [
       'expo-notifications',
       {
-        color: '#E0A24A',
+        color: '#DBA73F',
       },
     ],
     [
@@ -54,7 +54,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       {
         image: './assets/splash-icon.png',
         resizeMode: 'contain',
-        backgroundColor: '#0E0B09',
+        backgroundColor: '#FFFFFF',
       },
     ],
   ],

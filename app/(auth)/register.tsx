@@ -9,7 +9,7 @@ import { authApi } from '@/api/endpoints';
 import { Button, Input, Screen, Text, toast } from '@/components';
 import { brDateToIso, isValidCpf, maskCpf, maskDateBR, maskPhone, onlyDigits } from '@/lib/format';
 import { completeSignIn } from '@/lib/session';
-import { space } from '@/theme';
+import { colors, space } from '@/theme';
 
 const schema = z.object({
   firstName: z.string().trim().min(2, 'Informe seu nome'),
@@ -53,7 +53,7 @@ export default function Register() {
   const err = formState.errors;
 
   return (
-    <Screen keyboard title="Criar conta" subtitle="A mesma conta vale para a loja e para o app.">
+    <Screen keyboard title="Criar conta" subtitle="A mesma conta vale para a loja e para o app." style={styles.root}>
       <View style={styles.row}>
         <View style={styles.half}>
           <Controller
@@ -118,6 +118,7 @@ export default function Register() {
 }
 
 const styles = StyleSheet.create({
+  root: { backgroundColor: colors.surface },
   row: { flexDirection: 'row', gap: space(3) },
   half: { flex: 1 },
   submit: { marginTop: space(2) },

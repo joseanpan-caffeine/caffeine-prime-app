@@ -2,7 +2,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import { useAppConfig, useDashboard } from '@/api/hooks';
-import { Button, EmptyState, Screen, toast } from '@/components';
+import { Button, EmptyState, Logo, Screen, toast } from '@/components';
 import { signOut } from '@/lib/session';
 import { useAuthStore } from '@/store/auth';
 
@@ -34,6 +34,7 @@ export default function NoSubscription() {
 
   return (
     <Screen scroll={false} safeTop>
+      <Logo style={{ alignSelf: 'center', marginTop: 8 }} />
       <EmptyState
         icon="☕"
         title={`Olá${user?.firstName ? `, ${user.firstName}` : ''}! Você ainda não é Prime.`}

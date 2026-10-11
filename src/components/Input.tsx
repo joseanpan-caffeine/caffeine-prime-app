@@ -1,6 +1,6 @@
 import { forwardRef, type ReactNode } from 'react';
 import { StyleSheet, TextInput, View, type TextInputProps } from 'react-native';
-import { colors, radius, space, typography } from '@/theme';
+import { colors, radius, space, textStyle } from '@/theme';
 import { Text } from './Text';
 
 export interface InputProps extends TextInputProps {
@@ -14,17 +14,17 @@ export const Input = forwardRef<TextInput, InputProps>(function Input({ label, e
   return (
     <View style={styles.wrap}>
       {label ? (
-        <Text variant="caption" tone="muted" style={styles.label}>
-          {label.toUpperCase()}
+        <Text variant="small" tone="secondary" style={styles.label}>
+          {label}
         </Text>
       ) : null}
       <View style={[styles.field, !!error && styles.fieldError]}>
         <TextInput
           ref={ref}
-          placeholderTextColor={colors.textDim}
-          selectionColor={colors.accent}
-          keyboardAppearance="dark"
-          style={[styles.input, style]}
+          placeholderTextColor={colors.textMuted}
+          selectionColor={colors.gold}
+          keyboardAppearance="light"
+          style={[styles.input, textStyle('body'), style]}
           {...rest}
         />
         {right}
@@ -44,16 +44,16 @@ export const Input = forwardRef<TextInput, InputProps>(function Input({ label, e
 
 const styles = StyleSheet.create({
   wrap: { gap: space(1.5), marginBottom: space(3) },
-  label: { letterSpacing: 0.8 },
+  label: {},
   field: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.surfaceElevated,
-    borderRadius: radius.md,
+    backgroundColor: colors.surface,
+    borderRadius: radius.sm,
     borderWidth: 1,
     borderColor: colors.borderStrong,
     paddingHorizontal: space(3),
   },
   fieldError: { borderColor: colors.danger },
-  input: { flex: 1, ...typography.body, color: colors.text, paddingVertical: space(3), minHeight: 50 },
+  input: { flex: 1, color: colors.text, fontSize: 14, paddingVertical: space(2.5), minHeight: 44 },
 });

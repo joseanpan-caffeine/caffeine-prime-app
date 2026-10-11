@@ -8,7 +8,7 @@ export default function Index() {
   if (status === 'booting') {
     return (
       <View style={styles.root}>
-        <ActivityIndicator color={colors.accent} />
+        <ActivityIndicator color={colors.gold} />
       </View>
     );
   }

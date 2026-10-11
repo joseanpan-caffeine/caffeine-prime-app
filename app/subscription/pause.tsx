@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { errorMessage } from '@/api/client';
 import { useDashboard, usePauseReasons, usePauseSubscription } from '@/api/hooks';
-import { Button, Card, EmptyState, Screen, Section, SkeletonCard, Text, toast } from '@/components';
+import { AlertCard, Button, Card, EmptyState, Screen, Section, SkeletonCard, Text, toast } from '@/components';
 import { ReasonPicker } from '@/features/subscription/ReasonPicker';
 import { formatDate } from '@/lib/format';
 import { capabilityReasonLabel } from '@/lib/labels';
@@ -58,11 +58,11 @@ export default function PauseScreen() {
       footer={<Button title={`Pausar por ${cycles} ciclo${cycles > 1 ? 's' : ''}`} onPress={submit} loading={pause.isPending} disabled={!reason} />}
     >
       {cap ? (
-        <Card tone="elevated">
-          <Text variant="small" tone="muted">
-            Você tem {cap.creditsLeft ?? 0} crédito{(cap.creditsLeft ?? 0) === 1 ? '' : 's'} de pausa neste plano. Cada pausa usa 1 crédito, independentemente da duração.
+        <AlertCard variant="paused" title="Pausar assinatura">
+          <Text variant="body" tone="secondary">
+            Você tem <Text variant="bodyStrong">{cap.creditsLeft ?? 0} {(cap.creditsLeft ?? 0) === 1 ? 'pausa disponível' : 'pausas disponíveis'}</Text> neste plano. Cada pausa usa 1 crédito, independentemente da duração.
           </Text>
-        </Card>
+        </AlertCard>
       ) : null}
 
       <Section title="Duração">
@@ -71,7 +71,7 @@ export default function PauseScreen() {
             const active = n === cycles;
             return (
               <Pressable key={n} onPress={() => setCycles(n)} accessibilityRole="radio" accessibilityState={{ selected: active }} style={[styles.option, active && styles.optionOn]}>
-                <Text variant="title" tone={active ? 'accent' : 'default'}>
+                <Text variant="title" tone={active ? 'gold' : 'default'}>
                   {n}
                 </Text>
                 <Text variant="caption" tone="muted">
@@ -103,6 +103,6 @@ export default function PauseScreen() {
 
 const styles = StyleSheet.create({
   options: { flexDirection: 'row', gap: space(3) },
-  option: { flex: 1, alignItems: 'center', padding: space(4), borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
-  optionOn: { borderColor: colors.accent, backgroundColor: colors.accentSoft },
+  option: { flex: 1, alignItems: 'center', padding: space(4), borderRadius: radius.md, borderWidth: 1, borderColor: colors.borderStrong, backgroundColor: colors.surface },
+  optionOn: { borderColor: colors.primary, backgroundColor: '#FFFBEB' },
 });

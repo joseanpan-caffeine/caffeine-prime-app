@@ -19,7 +19,7 @@ import {
   useUpdateNotificationPreferences,
   useUpdateProfile,
 } from '@/api/hooks';
-import { Button, Card, Input, ListItem, Screen, Section, Sheet, Text, toast } from '@/components';
+import { AppHeader, Button, Input, Logo, Screen, SectionList, SectionRow, Sheet, Text, toast } from '@/components';
 import { maskPhone, onlyDigits } from '@/lib/format';
 import { API_URL, FAKE_AUTH } from '@/lib/env';
 import { signOut } from '@/lib/session';
@@ -97,83 +97,85 @@ export default function Profile() {
   }
 
   return (
-    <Screen safeTop title="Perfil" onRefresh={() => { void me.refetch(); void prefs.refetch(); void address.refetch(); }} refreshing={me.isRefetching}>
-      <Card tone="elevated">
-        <View style={styles.userRow}>
-          <View style={styles.avatar}>
-            <Text variant="heading" tone="accent">
-              {(user?.firstName?.[0] ?? '?').toUpperCase()}
-            </Text>
-          </View>
-          <View style={styles.flex1}>
-            <Text variant="heading">{user ? `${user.firstName} ${user.lastName}`.trim() : '—'}</Text>
-            <Text variant="small" tone="muted">
-              {user?.email ?? ''}
-            </Text>
-            {user?.cpf ? (
-              <Text variant="caption" tone="dim">
-                CPF {user.cpf}
-                {user.phone ? ` · ${maskPhone(user.phone)}` : ''}
-              </Text>
-            ) : null}
-          </View>
+    <Screen
+      header={<AppHeader onMenu={() => router.push('/(tabs)')} onProfile={() => setEditing(true)} />}
+      onRefresh={() => { void me.refetch(); void prefs.refetch(); void address.refetch(); }}
+      refreshing={me.isRefetching}
+    >
+      <View style={styles.hero}>
+        <View style={styles.avatar}>
+          <Text variant="title" tone="onDark">
+            {(user?.firstName?.[0] ?? '?').toUpperCase()}
+          </Text>
         </View>
-        <Button title="Editar dados" variant="secondary" size="sm" style={styles.mt3} onPress={() => setEditing(true)} />
-      </Card>
+        <View style={styles.flex1}>
+          <Text variant="heading" tone="onDark">{user ? `${user.firstName} ${user.lastName}`.trim() : '—'}</Text>
+          <Text variant="small" tone="onDarkMuted">
+            {user?.email ?? ''}
+          </Text>
+          {user?.cpf ? (
+            <Text variant="caption" tone="onDarkMuted">
+              CPF {user.cpf}
+              {user.phone ? ` · ${maskPhone(user.phone)}` : ''}
+            </Text>
+          ) : null}
+        </View>
+        <Logo size="sm" color={colors.primaryStrong} />
+      </View>
+      <Button title="Editar dados" variant="secondary" size="sm" style={styles.editBtn} onPress={() => setEditing(true)} />
 
-      <Section title="Assinatura">
-        <Card padded={false} style={styles.listCard}>
-          <ListItem
-            title="Cartões"
-            subtitle={sub?.paymentProfile ? `${sub.paymentProfile.brand} •••• ${sub.paymentProfile.lastFour}` : 'Gerenciar formas de pagamento'}
-            onPress={() => router.push('/payments/cards')}
+      <SectionList title="Assinatura">
+        <SectionRow
+          icon="cash-outline"
+          title="Cartões"
+          subtitle={sub?.paymentProfile ? `${sub.paymentProfile.brand} (final ${sub.paymentProfile.lastFour})` : 'Gerenciar formas de pagamento'}
+          onPress={() => router.push('/payments/cards')}
+        />
+        <SectionRow
+          icon="car-outline"
+          title="Endereço de entrega"
+          subtitle={address.data ? `${address.data.street}, ${address.data.number} · ${address.data.city}/${address.data.state}` : 'Alterar endereço'}
+          onPress={() => router.push('/shipping/address')}
+        />
+        <SectionRow icon="time-outline" title="Histórico de pedidos" onPress={() => router.push('/(tabs)/orders')} />
+        {sub?.status === 'paused' ? <SectionRow icon="play-outline" title="Retomar assinatura" onPress={() => router.push('/subscription/paused')} /> : null}
+        {caps?.canPause.allowed ? <SectionRow icon="pause-outline" title="Pausar assinatura" subtitle={`Você tem ${caps.canPause.creditsLeft ?? 0} ${(caps.canPause.creditsLeft ?? 0) === 1 ? 'pausa disponível' : 'pausas disponíveis'}`} onPress={() => router.push('/subscription/pause')} /> : null}
+        {sub?.status === 'canceled' ? <SectionRow icon="refresh-outline" title="Reativar assinatura" onPress={() => router.push('/subscription/canceled')} /> : null}
+        {caps?.canCancel.allowed ? <SectionRow icon="close-circle-outline" title="Cancelar e perder benefícios" danger onPress={() => router.push('/subscription/cancel')} last /> : <View />}
+      </SectionList>
+
+      <SectionList title="Notificações">
+        {prefLabels.map((p, idx) => (
+          <SectionRow
+            key={p.key}
+            icon="notifications-outline"
+            title={p.title}
+            subtitle={p.subtitle}
+            chevron={false}
+            last={idx === prefLabels.length - 1}
+            right={
+              <Switch
+                value={prefs.data?.[p.key] ?? false}
+                disabled={!prefs.data}
+                onValueChange={(v) => updatePrefs.mutate({ [p.key]: v }, { onError: (e) => toast.error(errorMessage(e)) })}
+                trackColor={{ true: colors.primaryStrong, false: colors.borderStrong }}
+                thumbColor={prefs.data?.[p.key] ? colors.gold : colors.surface}
+              />
+            }
           />
-          <ListItem
-            title="Endereço de entrega"
-            subtitle={address.data ? `${address.data.street}, ${address.data.number} · ${address.data.city}/${address.data.state}` : 'Alterar endereço'}
-            onPress={() => router.push('/shipping/address')}
-          />
-          {sub?.status === 'paused' ? <ListItem title="Retomar assinatura" onPress={() => router.push('/subscription/paused')} /> : null}
-          {caps?.canPause.allowed ? <ListItem title="Pausar assinatura" subtitle={`${caps.canPause.creditsLeft ?? 0} crédito(s) de pausa`} onPress={() => router.push('/subscription/pause')} /> : null}
-          {sub?.status === 'canceled' ? <ListItem title="Reativar assinatura" onPress={() => router.push('/subscription/canceled')} /> : null}
-          {caps?.canCancel.allowed ? <ListItem title="Cancelar assinatura" danger onPress={() => router.push('/subscription/cancel')} last /> : null}
-        </Card>
-      </Section>
+        ))}
+      </SectionList>
 
-      <Section title="Notificações">
-        <Card padded={false} style={styles.listCard}>
-          {prefLabels.map((p, idx) => (
-            <ListItem
-              key={p.key}
-              title={p.title}
-              subtitle={p.subtitle}
-              last={idx === prefLabels.length - 1}
-              right={
-                <Switch
-                  value={prefs.data?.[p.key] ?? false}
-                  disabled={!prefs.data}
-                  onValueChange={(v) => updatePrefs.mutate({ [p.key]: v }, { onError: (e) => toast.error(errorMessage(e)) })}
-                  trackColor={{ true: colors.accentDark, false: colors.borderStrong }}
-                  thumbColor={prefs.data?.[p.key] ? colors.accent : colors.textMuted}
-                />
-              }
-            />
-          ))}
-        </Card>
-      </Section>
-
-      <Section title="Privacidade">
-        <Card padded={false} style={styles.listCard}>
-          <ListItem title="Política de privacidade" onPress={() => openLink(config.data?.links.privacy, 'Política de privacidade')} />
-          <ListItem title="Termos de uso" onPress={() => openLink(config.data?.links.terms, 'Termos de uso')} />
-          <ListItem title="Falar com o suporte" onPress={() => openLink(config.data?.links.support, 'Suporte')} />
-          <ListItem title="Excluir minha conta" danger onPress={confirmDelete} last />
-        </Card>
-      </Section>
+      <SectionList title="Ajuda e privacidade">
+        <SectionRow icon="headset-outline" title="Fale com nossos especialistas" onPress={() => openLink(config.data?.links.support, 'Suporte')} />
+        <SectionRow icon="document-text-outline" title="Política de privacidade" onPress={() => openLink(config.data?.links.privacy, 'Política de privacidade')} />
+        <SectionRow icon="reader-outline" title="Termos de uso" onPress={() => openLink(config.data?.links.terms, 'Termos de uso')} />
+        <SectionRow icon="trash-outline" title="Excluir minha conta" danger onPress={confirmDelete} last />
+      </SectionList>
 
       <Button title="Sair" variant="secondary" onPress={onSignOut} loading={signingOut} />
       <Text variant="caption" tone="dim" center style={styles.version}>
-        Caffeine Prime v{Constants.expoConfig?.version ?? '1.0.0'}
+        Caffeine Army Prime v{Constants.expoConfig?.version ?? '1.0.0'}
         {FAKE_AUTH ? ' · modo fake' : ''} · {API_URL}
       </Text>
 
@@ -212,9 +214,8 @@ function EditProfileSheet({ visible, onClose, defaults }: { visible: boolean; on
 
 const styles = StyleSheet.create({
   flex1: { flex: 1 },
-  mt3: { marginTop: space(3) },
-  userRow: { flexDirection: 'row', alignItems: 'center', gap: space(3) },
-  avatar: { width: 52, height: 52, borderRadius: radius.pill, backgroundColor: colors.accentSoft, alignItems: 'center', justifyContent: 'center' },
-  listCard: { paddingHorizontal: space(4) },
+  hero: { flexDirection: 'row', alignItems: 'center', gap: space(3), backgroundColor: colors.brandDark, borderRadius: radius.md, padding: space(4), marginBottom: space(2) },
+  avatar: { width: 56, height: 56, borderRadius: radius.pill, backgroundColor: colors.gold, alignItems: 'center', justifyContent: 'center' },
+  editBtn: { alignSelf: 'flex-end', marginBottom: space(3) },
   version: { marginTop: space(4) },
 });

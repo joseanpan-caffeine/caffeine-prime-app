@@ -10,7 +10,7 @@ import { Button, Card, EmptyState, Input, Screen, Text, toast } from '@/componen
 import { getDeviceName } from '@/lib/deviceName';
 import { FAKE_AUTH } from '@/lib/env';
 import { completeSignIn } from '@/lib/session';
-import { space, typography } from '@/theme';
+import { colors, space } from '@/theme';
 
 const schema = z.object({ email: z.string().trim().email('Informe um e-mail válido') });
 type FormValues = z.infer<typeof schema>;
@@ -52,7 +52,7 @@ export default function MagicLink() {
   if (sent) {
     const debugToken = sent.res.debugToken;
     return (
-      <Screen>
+      <Screen style={styles.root}>
         <EmptyState
           icon="✉️"
           title="Verifique seu e-mail"
@@ -62,7 +62,7 @@ export default function MagicLink() {
         />
         {FAKE_AUTH && debugToken ? (
           <Card title="Modo fake" subtitle="O BFF devolveu o token do link (debugToken).">
-            <Text variant="mono" tone="accent" selectable style={styles.token}>
+            <Text variant="mono" tone="gold" selectable style={styles.token}>
               {debugToken}
             </Text>
             <Button title="Usar este token" onPress={() => exchangeDebugToken(debugToken)} loading={exchanging} />
@@ -76,7 +76,7 @@ export default function MagicLink() {
   }
 
   return (
-    <Screen keyboard title="Entrar sem senha" subtitle="Enviamos um link para o seu e-mail. Toque nele no celular e pronto.">
+    <Screen keyboard title="Entrar sem senha" subtitle="Enviamos um link para o seu e-mail. Toque nele no celular e pronto." style={styles.root}>
       <Controller
         control={control}
         name="email"
@@ -104,7 +104,8 @@ export default function MagicLink() {
 }
 
 const styles = StyleSheet.create({
+  root: { backgroundColor: colors.surface },
   actions: { marginTop: space(2) },
-  token: { ...typography.mono, marginBottom: space(3) },
+  token: { marginBottom: space(3) },
   deep: { marginTop: space(2) },
 });

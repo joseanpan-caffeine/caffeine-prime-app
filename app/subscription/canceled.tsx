@@ -1,7 +1,10 @@
 import { useRouter } from 'expo-router';
 import { errorMessage } from '@/api/client';
 import { useDashboard, useReactivateSubscription } from '@/api/hooks';
-import { Button, Card, EmptyState, Money, Row, Screen, SkeletonCard, Text, toast } from '@/components';
+import { AlertCard, Card, EmptyState, Money, Row, Screen, SkeletonCard, Text, toast } from '@/components';
+import { Ionicons } from '@expo/vector-icons';
+import { View } from 'react-native';
+import { colors } from '@/theme';
 import { formatDate } from '@/lib/format';
 import { capabilityReasonLabel, frequencyLabel } from '@/lib/labels';
 
@@ -38,8 +41,32 @@ export default function CanceledScreen() {
   }
 
   return (
-    <Screen title="Assinatura cancelada" subtitle={data.lastCanceled ? `Cancelada em ${formatDate(data.lastCanceled.canceledAt)}.` : undefined}>
-      <Card tone="elevated" title={sub.planName} subtitle={frequencyLabel[sub.frequency]}>
+    <Screen>
+      <AlertCard variant="canceled" title="Sentimos sua falta!" primaryLabel={cap?.allowed ? 'Retomar assinatura' : undefined} onPrimary={cap?.allowed ? onReactivate : undefined} primaryLoading={reactivate.isPending}>
+        <Text variant="body" tone="secondary">
+          {data.user.firstName}, assine novamente o Caffeine Army Prime e garanta seus benefícios novamente:
+        </Text>
+        {[
+          ['Desconto', ' nos produtos Caffeine Army'],
+          ['Praticidade', ' em receber seu SuperCoffee em casa'],
+          ['Flexibilidade', ' para personalizar sabor, quantidade e tamanho das suas latas'],
+          ['Frete grátis', ' em compras avulsas no site'],
+        ].map(([b, rest]) => (
+          <View key={b} style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 8 }}>
+            <Ionicons name="checkmark-circle-outline" size={16} color={colors.gold} style={{ marginTop: 1 }} />
+            <Text variant="body" tone="secondary" style={{ flex: 1 }}>
+              <Text variant="bodyStrong">{b}</Text>
+              {rest}
+            </Text>
+          </View>
+        ))}
+        {data.lastCanceled ? (
+          <Text variant="caption" tone="dim">
+            Cancelada em {formatDate(data.lastCanceled.canceledAt)}.
+          </Text>
+        ) : null}
+      </AlertCard>
+      <Card title={sub.planName} subtitle={frequencyLabel[sub.frequency]}>
         {sub.items.map((i) => (
           <Row key={i.id}>
             <Text variant="small" tone="muted">
@@ -56,12 +83,9 @@ export default function CanceledScreen() {
         </Row>
       </Card>
       {cap?.allowed ? (
-        <>
-          <Button title="Reativar assinatura" onPress={onReactivate} loading={reactivate.isPending} />
-          <Text variant="caption" tone="dim" center style={{ marginTop: 12 }}>
-            Sua caixa volta com os mesmos itens, plano e desconto. A primeira cobrança acontece na reativação.
-          </Text>
-        </>
+        <Text variant="caption" tone="dim" center style={{ marginTop: 4 }}>
+          Sua caixa volta com os mesmos itens, plano e desconto. A primeira cobrança acontece na reativação.
+        </Text>
       ) : (
         <Card>
           <Text variant="small" tone="muted">

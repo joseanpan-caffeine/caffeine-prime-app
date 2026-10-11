@@ -44,11 +44,9 @@ const styles = StyleSheet.create({
   base: { backgroundColor: colors.skeleton },
   card: {
     backgroundColor: colors.surface,
-    borderRadius: radius.lg,
+    borderRadius: radius.md,
     padding: space(4),
     gap: space(3),
     marginBottom: space(3),
-    borderWidth: 1,
-    borderColor: colors.border,
   },
 });

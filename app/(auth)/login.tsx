@@ -7,7 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { errorMessage } from '@/api/client';
 import { authApi } from '@/api/endpoints';
-import { Button, Input, Screen, Text, toast } from '@/components';
+import { Button, Input, Logo, Screen, Text, toast } from '@/components';
 import { SocialButtons } from '@/features/auth/SocialButtons';
 import { getDeviceName } from '@/lib/deviceName';
 import { FAKE_AUTH } from '@/lib/env';
@@ -42,7 +42,12 @@ export default function Login() {
   });
 
   return (
-    <Screen keyboard title="Bem-vindo de volta" subtitle="Entre com a mesma conta da loja Caffeine Army.">
+    <Screen keyboard style={styles.root}>
+      <Logo style={styles.logo} />
+      <Text variant="title">Bem-vindo de volta</Text>
+      <Text variant="body" tone="secondary" style={styles.subtitle}>
+        Entre com a mesma conta da loja Caffeine Army.
+      </Text>
       <Controller
         control={control}
         name="email"
@@ -109,8 +114,11 @@ export default function Login() {
 }
 
 const styles = StyleSheet.create({
+  root: { backgroundColor: colors.surface },
+  logo: { alignSelf: 'center', marginBottom: space(6) },
+  subtitle: { marginBottom: space(5), marginTop: space(1) },
   divider: { flexDirection: 'row', alignItems: 'center', gap: space(3), marginVertical: space(5) },
-  line: { flex: 1, height: StyleSheet.hairlineWidth, backgroundColor: colors.borderStrong },
+  line: { flex: 1, height: 1, backgroundColor: colors.borderStrong },
   footer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: space(6), gap: space(1) },
   fake: { marginTop: space(4) },
 });

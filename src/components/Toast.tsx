@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
-import { Animated, Pressable, StyleSheet } from 'react-native';
+import { Animated, Pressable, StyleSheet, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { create } from 'zustand';
-import { colors, radius, space } from '@/theme';
+import { colors, radius, shadows, space } from '@/theme';
 import { Text } from './Text';
 
 export type ToastKind = 'info' | 'success' | 'error';
@@ -10,30 +11,29 @@ interface ToastItem {
   id: number;
   message: string;
   kind: ToastKind;
+  title?: string;
 }
 
 interface ToastState {
   current: ToastItem | null;
-  show: (message: string, kind?: ToastKind) => void;
+  show: (message: string, kind?: ToastKind, title?: string) => void;
   hide: () => void;
 }
 
 let seq = 0;
 export const useToastStore = create<ToastState>((set) => ({
   current: null,
-  show: (message, kind = 'info') => set({ current: { id: ++seq, message, kind } }),
+  show: (message, kind = 'info', title) => set({ current: { id: ++seq, message, kind, title } }),
   hide: () => set({ current: null }),
 }));
 
 export const toast = {
   info: (m: string) => useToastStore.getState().show(m, 'info'),
   success: (m: string) => useToastStore.getState().show(m, 'success'),
-  error: (m: string) => useToastStore.getState().show(m, 'error'),
+  error: (m: string) => useToastStore.getState().show(m, 'error', 'Algo deu errado.'),
 };
 
-const border: Record<ToastKind, string> = { info: colors.accent, success: colors.success, error: colors.danger };
-
-/** Renderize uma vez no layout raiz. */
+/** Toast do Figma: branco com sombra, ícone verde (ok) ou vermelho (erro) + título bold + texto. */
 export function ToastHost() {
   const current = useToastStore((s) => s.current);
   const hide = useToastStore((s) => s.hide);
@@ -51,6 +51,9 @@ export function ToastHost() {
   }, [current, anim, hide]);
 
   if (!current) return null;
+  const isError = current.kind === 'error';
+  const iconBg = isError ? colors.danger : current.kind === 'success' ? colors.success : colors.gold;
+  const iconName = isError ? 'close' : current.kind === 'success' ? 'checkmark' : 'information';
   return (
     <Animated.View
       pointerEvents="box-none"
@@ -59,8 +62,18 @@ export function ToastHost() {
         { top: insets.top + space(2), opacity: anim, transform: [{ translateY: anim.interpolate({ inputRange: [0, 1], outputRange: [-20, 0] }) }] },
       ]}
     >
-      <Pressable onPress={hide} style={[styles.toast, { borderLeftColor: border[current.kind] }]} accessibilityRole="alert">
-        <Text variant="small">{current.message}</Text>
+      <Pressable onPress={hide} style={[styles.toast, shadows.float, isError && styles.toastError]} accessibilityRole="alert">
+        <View style={[styles.icon, { backgroundColor: iconBg }]}>
+          <Ionicons name={iconName} size={14} color="#FFFFFF" />
+        </View>
+        <View style={styles.text}>
+          {current.title ? (
+            <Text variant="bodyStrong" tone={isError ? 'danger' : 'default'}>
+              {current.title}
+            </Text>
+          ) : null}
+          <Text variant="body">{current.message}</Text>
+        </View>
       </Pressable>
     </Animated.View>
   );
@@ -69,13 +82,16 @@ export function ToastHost() {
 const styles = StyleSheet.create({
   wrap: { position: 'absolute', left: space(4), right: space(4), zIndex: 100, alignItems: 'center' },
   toast: {
-    backgroundColor: colors.surfaceElevated,
-    borderRadius: radius.md,
-    borderLeftWidth: 4,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: space(3),
+    backgroundColor: colors.surface,
+    borderRadius: radius.sm,
     paddingVertical: space(3),
     paddingHorizontal: space(4),
-    borderWidth: 1,
-    borderColor: colors.borderStrong,
     alignSelf: 'stretch',
   },
+  toastError: { backgroundColor: colors.dangerCard },
+  icon: { width: 22, height: 22, borderRadius: 11, alignItems: 'center', justifyContent: 'center', marginTop: 1 },
+  text: { flex: 1, gap: 2 },
 });

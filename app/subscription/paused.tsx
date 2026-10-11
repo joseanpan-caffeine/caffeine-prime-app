@@ -1,8 +1,9 @@
 import { useRouter } from 'expo-router';
 import { errorMessage } from '@/api/client';
 import { useDashboard, useResumeSubscription } from '@/api/hooks';
-import { Button, Card, EmptyState, Money, Row, Screen, SkeletonCard, Text, toast } from '@/components';
+import { AlertCard, Card, EmptyState, Money, Row, Screen, SkeletonCard, Text, toast } from '@/components';
 import { describeDaysUntil, formatDate } from '@/lib/format';
+import { formatShortDate } from '@/lib/prime';
 import { capabilityReasonLabel } from '@/lib/labels';
 
 export default function PausedScreen() {
@@ -38,8 +39,24 @@ export default function PausedScreen() {
   }
 
   return (
-    <Screen title="Assinatura pausada" subtitle={sub.pause ? `Retoma automaticamente ${describeDaysUntil(sub.pause.resumeAt)}, em ${formatDate(sub.pause.resumeAt)}.` : undefined}>
-      <Card tone="elevated">
+    <Screen>
+      <AlertCard
+        variant="paused"
+        title="Assinatura pausada"
+        primaryLabel={cap?.allowed ? 'Retomar assinatura' : undefined}
+        onPrimary={cap?.allowed ? onResume : undefined}
+        primaryLoading={resume.isPending}
+      >
+        <Text variant="body" tone="secondary">
+          {sub.pause ? `Sua assinatura está pausada por ${sub.pause.cycles} ${sub.pause.cycles === 1 ? 'ciclo' : 'ciclos'}.` : 'Sua assinatura está pausada.'}
+        </Text>
+        {sub.pause ? (
+          <Text variant="body" tone="secondary">
+            O próximo pagamento será efetivado automaticamente em <Text variant="bodyStrong">{formatShortDate(sub.pause.resumeAt, true)}</Text> ({describeDaysUntil(sub.pause.resumeAt)}).
+          </Text>
+        ) : null}
+      </AlertCard>
+      <Card>
         {sub.pause ? (
           <>
             <Row>
@@ -65,15 +82,13 @@ export default function PausedScreen() {
           <Money value={sub.total} variant="small" />
         </Row>
       </Card>
-      {cap?.allowed ? (
-        <Button title="Retomar agora" onPress={onResume} loading={resume.isPending} />
-      ) : (
+      {!cap?.allowed ? (
         <Card>
           <Text variant="small" tone="muted">
             {capabilityReasonLabel(cap?.reason, cap?.until)}
           </Text>
         </Card>
-      )}
+      ) : null}
       <Text variant="caption" tone="dim" center>
         Ao retomar, a próxima cobrança acontece no ciclo seguinte com a sua caixa atual.
       </Text>

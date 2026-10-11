@@ -42,7 +42,7 @@ export default function MagicExchange() {
           </>
         ) : (
           <>
-            <ActivityIndicator color={colors.accent} />
+            <ActivityIndicator color={colors.gold} />
             <Text variant="small" tone="muted">
               Validando seu link…
             </Text>

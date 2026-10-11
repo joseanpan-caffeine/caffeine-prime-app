@@ -1,28 +1,43 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Image } from 'expo-image';
 import * as Clipboard from 'expo-clipboard';
+import * as WebBrowser from 'expo-web-browser';
 import type { Bill, PixCharge } from '@/api/contracts';
 import { errorMessage } from '@/api/client';
-import { useBill, useDashboard, usePayWithCurrentCard, usePayWithNewCard, usePayWithPix } from '@/api/hooks';
-import { Badge, Button, Card, EmptyState, Money, Row, Screen, SkeletonCard, Text, toast } from '@/components';
+import { useAppConfig, useBill, useDashboard, usePayWithCurrentCard, usePayWithNewCard, usePayWithPix } from '@/api/hooks';
+import { Button, Card, EmptyState, Money, PaymentFailedCard, PixPaymentCard, Row, Screen, SkeletonCard, Text, toast, type PaymentOption } from '@/components';
 import { CardForm } from '@/features/payments/CardForm';
 import { formatCountdown, formatDate } from '@/lib/format';
+import { formatShortDate } from '@/lib/prime';
 import type { TokenizedCard } from '@/lib/vindi';
-import { colors, radius, space } from '@/theme';
-
-type Method = 'pix' | 'card' | 'new-card';
+import { space } from '@/theme';
 
 export default function PayBill() {
   const { billId, method: initialMethod } = useLocalSearchParams<{ billId: string; method?: string }>();
   const router = useRouter();
   const { data: bill, isLoading, isError, error, refetch } = useBill(billId);
   const { data: dashboard } = useDashboard();
-  const [method, setMethod] = useState<Method>(initialMethod === 'card' ? 'card' : 'pix');
+  const config = useAppConfig();
+  const payCard = usePayWithCurrentCard();
+  const payPix = usePayWithPix();
+  const [chosen, setMethod] = useState<PaymentOption | null>(initialMethod === 'card' ? 'card' : initialMethod === 'pix' ? 'pix' : null);
+  const [showNewCard, setShowNewCard] = useState(false);
+  const [pixRequested, setPixRequested] = useState(initialMethod === 'pix');
 
   const currentCard = dashboard?.subscription?.paymentProfile ?? bill?.paymentProfile;
   const pixAvailable = dashboard?.capabilities.pendingBill?.id === bill?.id ? dashboard?.capabilities.pendingBill?.pixAvailable !== false : true;
+
+  // Opção padrão derivada: cartão atual → PIX → novo cartão.
+  const method: PaymentOption = chosen && (chosen !== 'card' || currentCard) ? chosen : currentCard ? 'card' : pixAvailable ? 'pix' : 'new-card';
+
+  // Gera o PIX automaticamente quando o usuário escolheu PIX (deep link ou botão) e ainda não há cobrança.
+  useEffect(() => {
+    if (method === 'pix' && pixRequested && bill && !bill.pix && !payPix.data && !payPix.isPending && !payPix.isError) {
+      payPix.mutate(bill.id, { onError: (e) => toast.error(errorMessage(e, 'Não foi possível gerar o PIX.')) });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [method, pixRequested, bill?.id]);
 
   if (isLoading) {
     return (
@@ -47,56 +62,97 @@ export default function PayBill() {
     );
   }
 
-  const tabs: { key: Method; label: string; enabled: boolean }[] = [
-    { key: 'pix', label: 'PIX', enabled: pixAvailable },
-    { key: 'card', label: 'Cartão atual', enabled: !!currentCard },
-    { key: 'new-card', label: 'Novo cartão', enabled: true },
+  const options: { key: PaymentOption; label: string; hint: string; enabled: boolean }[] = [
+    { key: 'card', label: 'Realizar cobrança no cartão atual', hint: 'Este e próximos meses', enabled: !!currentCard },
+    { key: 'pix', label: 'Pagar com PIX', hint: 'Apenas este mês', enabled: pixAvailable },
+    { key: 'new-card', label: 'Alterar cartão de cobrança', hint: 'Este e próximos meses', enabled: true },
   ];
+
+  function onPrimary() {
+    if (method === 'card') {
+      payCard.mutate(bill!.id, {
+        onSuccess: (b) => {
+          if (b.status === 'paid') {
+            toast.success('Pagamento aprovado!');
+            router.replace('/(tabs)');
+          } else {
+            toast.info('Pagamento enviado. Aguardando confirmação da operadora.');
+          }
+        },
+        onError: (e) => toast.error(errorMessage(e, 'Pagamento recusado. Tente outro cartão.')),
+      });
+    } else if (method === 'pix') {
+      setPixRequested(true);
+      if (payPix.isError) payPix.mutate(bill!.id, { onError: (e) => toast.error(errorMessage(e, 'Não foi possível gerar o PIX.')) });
+    } else {
+      setShowNewCard(true);
+    }
+  }
+
+  async function support() {
+    const url = config.data?.links.support;
+    if (!url) {
+      toast.info('Canal de suporte indisponível no momento.');
+      return;
+    }
+    try {
+      await WebBrowser.openBrowserAsync(url);
+    } catch {
+      toast.error('Não foi possível abrir o link.');
+    }
+  }
 
   return (
     <Screen keyboard>
-      <Card tone="accent" title={`Fatura · ciclo ${bill.cycle}`} subtitle={`Vencimento ${formatDate(bill.dueAt)}`} right={<Badge label="Pendente" tone="warning" />}>
-        <Money value={bill.amount} variant="display" />
+      <Card>
+        <Row>
+          <View>
+            <Text variant="small" tone="secondary">
+              Fatura · ciclo {bill.cycle}
+            </Text>
+            <Text variant="small" tone="secondary">
+              Vencimento {formatShortDate(bill.dueAt, true)}
+            </Text>
+          </View>
+          <Money value={bill.amount} variant="title" />
+        </Row>
       </Card>
 
-      <View style={styles.tabs}>
-        {tabs.map((t) => (
-          <Pressable key={t.key} onPress={() => t.enabled && setMethod(t.key)} disabled={!t.enabled} accessibilityRole="tab" accessibilityState={{ selected: method === t.key, disabled: !t.enabled }} style={[styles.tab, method === t.key && styles.tabOn, !t.enabled && styles.tabOff]}>
-            <Text variant="small" tone={method === t.key ? 'onAccent' : 'default'} style={styles.tabText}>
-              {t.label}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
+      <PaymentFailedCard
+        title={bill.status === 'review' ? 'Seu pagamento está em análise' : 'Não foi possível processar seu pagamento'}
+        card={currentCard ? { brand: currentCard.brand, lastFour: currentCard.lastFour } : null}
+        options={options}
+        value={method}
+        onChange={(v) => {
+          setMethod(v);
+          if (v !== 'new-card') setShowNewCard(false);
+        }}
+        primaryLabel={method === 'card' ? `Regularizar assinatura · ${bill.amount.amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}` : method === 'pix' ? 'Gerar PIX' : 'Alterar cartão de cobrança'}
+        onPrimary={onPrimary}
+        primaryLoading={payCard.isPending || (method === 'pix' && payPix.isPending)}
+        onSupport={support}
+      />
 
-      {method === 'pix' ? <PixPanel bill={bill} /> : null}
-      {method === 'card' ? <CurrentCardPanel bill={bill} /> : null}
-      {method === 'new-card' ? <NewCardPanel bill={bill} /> : null}
+      {method === 'pix' && (pixRequested || bill.pix) ? <PixPanel bill={bill} pixData={payPix.data?.pix} regenerate={() => payPix.mutate(bill.id)} regenerating={payPix.isPending} error={payPix.isError ? errorMessage(payPix.error, 'Não foi possível gerar o PIX.') : null} /> : null}
+
+      {method === 'new-card' && showNewCard ? <NewCardPanel bill={bill} /> : null}
     </Screen>
   );
 }
 
-function PixPanel({ bill }: { bill: Bill }) {
+function PixPanel({ bill, pixData, regenerate, regenerating, error }: { bill: Bill; pixData?: PixCharge; regenerate: () => void; regenerating: boolean; error: string | null }) {
   const router = useRouter();
-  const payPix = usePayWithPix();
-  const pix: PixCharge | undefined = payPix.data?.pix ?? bill.pix;
-
-  useEffect(() => {
-    if (!bill.pix && !payPix.data && !payPix.isPending && !payPix.isError) {
-      payPix.mutate(bill.id, { onError: (e) => toast.error(errorMessage(e, 'Não foi possível gerar o PIX.')) });
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [bill.id]);
+  const pix: PixCharge | undefined = pixData ?? bill.pix;
 
   if (!pix) {
     return (
       <Card>
-        {payPix.isError ? (
+        {error ? (
           <>
             <Text variant="small" tone="danger">
-              {errorMessage(payPix.error, 'Não foi possível gerar o PIX.')}
+              {error}
             </Text>
-            <Button title="Tentar de novo" variant="secondary" size="sm" style={styles.mt3} onPress={() => payPix.mutate(bill.id)} />
+            <Button title="Tentar de novo" variant="secondary" size="sm" style={styles.mt3} onPress={regenerate} loading={regenerating} />
           </>
         ) : (
           <SkeletonCard lines={4} />
@@ -104,10 +160,10 @@ function PixPanel({ bill }: { bill: Bill }) {
       </Card>
     );
   }
-  return <PixDetails pix={pix} onRegenerate={() => payPix.mutate(bill.id)} regenerating={payPix.isPending} onPaid={() => router.replace('/(tabs)')} />;
+  return <PixDetails pix={pix} dueAt={bill.dueAt} onRegenerate={regenerate} regenerating={regenerating} onPaid={() => router.replace('/(tabs)')} />;
 }
 
-function PixDetails({ pix, onRegenerate, regenerating, onPaid }: { pix: PixCharge; onRegenerate: () => void; regenerating: boolean; onPaid: () => void }) {
+function PixDetails({ pix, dueAt, onRegenerate, regenerating, onPaid }: { pix: PixCharge; dueAt: string; onRegenerate: () => void; regenerating: boolean; onPaid: () => void }) {
   const expiresAt = useMemo(() => new Date(pix.expiresAt).getTime(), [pix.expiresAt]);
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
@@ -123,80 +179,23 @@ function PixDetails({ pix, onRegenerate, regenerating, onPaid }: { pix: PixCharg
   }
 
   return (
-    <Card>
-      <View style={styles.qrWrap}>
-        <Image source={{ uri: pix.qrCodeImageUrl }} style={styles.qr} contentFit="contain" />
-      </View>
-      <Row style={styles.mt3}>
-        <Text variant="small" tone="muted">
-          {expired ? 'QR Code expirado' : 'Expira em'}
-        </Text>
-        <Text variant="mono" tone={expired ? 'danger' : remaining < 5 * 60_000 ? 'accent' : 'default'}>
-          {expired ? '—' : formatCountdown(remaining)}
-        </Text>
-      </Row>
-      {expired ? (
-        <Button title="Gerar novo PIX" variant="secondary" style={styles.mt3} onPress={onRegenerate} loading={regenerating} />
-      ) : (
-        <>
-          <Text variant="caption" tone="dim" style={styles.mt3}>
-            PIX copia e cola
+    <PixPaymentCard
+      qrCodeImageUrl={pix.qrCodeImageUrl}
+      qrCodeText={pix.qrCodeText}
+      dueLabel={formatShortDate(dueAt, true)}
+      onCopy={copy}
+      expired={expired}
+      onRegenerate={onRegenerate}
+      regenerating={regenerating}
+      footer={
+        <View style={styles.pixFooter}>
+          <Text variant="caption" tone="dim" center>
+            {expired ? 'QR Code expirado.' : `Este QR Code expira em ${formatCountdown(remaining)}.`} A confirmação é automática em até alguns minutos. Se o PIX vencer, a cobrança vai para o cartão à meia-noite.
           </Text>
-          <Text variant="mono" tone="muted" numberOfLines={3} selectable>
-            {pix.qrCodeText}
-          </Text>
-          <Button title="Copiar código PIX" style={styles.mt3} onPress={copy} />
-        </>
-      )}
-      <Text variant="caption" tone="dim" center style={styles.mt3}>
-        A confirmação é automática em até alguns minutos. Se o PIX vencer, a cobrança vai para o cartão à meia-noite.
-      </Text>
-      <Button title="Já paguei" variant="ghost" size="sm" onPress={onPaid} />
-    </Card>
-  );
-}
-
-function CurrentCardPanel({ bill }: { bill: Bill }) {
-  const router = useRouter();
-  const { data: dashboard } = useDashboard();
-  const pay = usePayWithCurrentCard();
-  const card = dashboard?.subscription?.paymentProfile ?? bill.paymentProfile;
-
-  function onPay() {
-    pay.mutate(bill.id, {
-      onSuccess: (b) => {
-        if (b.status === 'paid') {
-          toast.success('Pagamento aprovado!');
-          router.replace('/(tabs)');
-        } else {
-          toast.info('Pagamento enviado. Aguardando confirmação da operadora.');
-        }
-      },
-      onError: (e) => toast.error(errorMessage(e, 'Pagamento recusado. Tente outro cartão.')),
-    });
-  }
-
-  return (
-    <Card title="Cobrar no cartão atual">
-      {card ? (
-        <Row>
-          <View>
-            <Text variant="bodyStrong">
-              {card.brand} •••• {card.lastFour}
-            </Text>
-            <Text variant="caption" tone="muted">
-              {card.holderName} · {card.expiration}
-            </Text>
-          </View>
-          {card.isDefault ? <Badge label="Padrão" tone="accent" /> : null}
-        </Row>
-      ) : (
-        <Text variant="small" tone="muted">
-          Nenhum cartão cadastrado.
-        </Text>
-      )}
-      <Button title={`Pagar ${bill.amount.amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`} style={styles.mt3} onPress={onPay} loading={pay.isPending} disabled={!card} />
-    </Card>
+          <Button title="Já paguei" variant="ghost" size="sm" onPress={onPaid} />
+        </View>
+      }
+    />
   );
 }
 
@@ -220,7 +219,7 @@ function NewCardPanel({ bill }: { bill: Bill }) {
   }
 
   return (
-    <Card title="Pagar com outro cartão" subtitle="O novo cartão passa a ser o padrão da assinatura.">
+    <Card title="Novo cartão de crédito" subtitle="O novo cartão passa a ser o padrão da assinatura.">
       <CardForm submitLabel="Pagar com este cartão" onTokenized={onTokenized} busy={pay.isPending} />
     </Card>
   );
@@ -228,11 +227,5 @@ function NewCardPanel({ bill }: { bill: Bill }) {
 
 const styles = StyleSheet.create({
   mt3: { marginTop: space(3) },
-  tabs: { flexDirection: 'row', backgroundColor: colors.surface, borderRadius: radius.md, padding: 4, marginBottom: space(4), borderWidth: 1, borderColor: colors.border },
-  tab: { flex: 1, paddingVertical: space(2.5), borderRadius: radius.sm, alignItems: 'center' },
-  tabOn: { backgroundColor: colors.accent },
-  tabOff: { opacity: 0.4 },
-  tabText: { fontWeight: '600' },
-  qrWrap: { alignSelf: 'center', padding: space(3), backgroundColor: '#FFFFFF', borderRadius: radius.md },
-  qr: { width: 220, height: 220 },
+  pixFooter: { gap: space(1) },
 });

@@ -4,7 +4,7 @@ import { Tabs, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useDashboard } from '@/api/hooks';
 import { useAuthStore } from '@/store/auth';
-import { colors, fonts } from '@/theme';
+import { colors, font } from '@/theme';
 
 type IconName = keyof typeof Ionicons.glyphMap;
 
@@ -41,10 +41,10 @@ export default function TabsLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: colors.accent,
-        tabBarInactiveTintColor: colors.textDim,
-        tabBarStyle: { backgroundColor: colors.background, borderTopColor: colors.border },
-        tabBarLabelStyle: { fontFamily: fonts.body, fontSize: 11, fontWeight: '600' },
+        tabBarActiveTintColor: colors.gold,
+        tabBarInactiveTintColor: colors.textMuted,
+        tabBarStyle: { backgroundColor: colors.surface, borderTopColor: colors.border },
+        tabBarLabelStyle: { fontSize: 11, ...font('body', '600') },
         sceneStyle: { backgroundColor: colors.background },
       }}
     >

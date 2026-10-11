@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, View, type ViewStyle } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { colors, space } from '@/theme';
 import { Text } from './Text';
 
@@ -31,9 +32,7 @@ export function ListItem({ title, subtitle, left, right, onPress, chevron, dange
       </View>
       {right ? <View style={styles.right}>{right}</View> : null}
       {chevron ?? !!onPress ? (
-        <Text variant="heading" tone="dim" style={styles.chevron}>
-          ›
-        </Text>
+        <Ionicons name="chevron-forward" size={18} color={colors.text} style={styles.chevron} />
       ) : null}
     </View>
   );
@@ -47,8 +46,8 @@ export function ListItem({ title, subtitle, left, right, onPress, chevron, dange
 
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', paddingVertical: space(3), gap: space(3) },
-  border: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },
-  left: { width: 40, alignItems: 'center' },
+  border: { borderBottomWidth: 1, borderBottomColor: colors.border },
+  left: { width: 28, alignItems: 'center' },
   text: { flex: 1, gap: 2 },
   right: { alignItems: 'flex-end' },
   chevron: { marginLeft: space(1) },

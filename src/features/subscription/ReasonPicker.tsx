@@ -1,6 +1,6 @@
 import { Pressable, StyleSheet, View } from 'react-native';
 import type { ReasonOption } from '@/api/contracts';
-import { Card, Text } from '@/components';
+import { Card, RadioRow, Text } from '@/components';
 import { colors, radius, space } from '@/theme';
 
 interface ReasonPickerProps {
@@ -16,25 +16,11 @@ export function ReasonPicker({ reasons, value, onChange, followUpAnswer, onFollo
   const selected = reasons.find((r) => r.code === value);
   return (
     <View>
-      <Card padded={false}>
-        {reasons.map((r, idx) => {
-          const active = r.code === value;
-          return (
-            <Pressable
-              key={r.code}
-              onPress={() => onChange(r.code)}
-              accessibilityRole="radio"
-              accessibilityState={{ selected: active }}
-              style={[styles.row, idx < reasons.length - 1 && styles.border]}
-            >
-              <View style={[styles.radio, active && styles.radioOn]} />
-              <Text variant={active ? 'bodyStrong' : 'body'} style={styles.flex1}>
-                {r.label}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </Card>
+      <View>
+        {reasons.map((r) => (
+          <RadioRow key={r.code} boxed label={r.label} selected={r.code === value} onPress={() => onChange(r.code)} />
+        ))}
+      </View>
       {selected?.followUp ? (
         <Card title={selected.followUp.question} padded>
           <View style={styles.chips}>
@@ -42,7 +28,7 @@ export function ReasonPicker({ reasons, value, onChange, followUpAnswer, onFollo
               const active = opt === followUpAnswer;
               return (
                 <Pressable key={opt} onPress={() => onFollowUp(opt)} accessibilityRole="button" accessibilityState={{ selected: active }} style={[styles.chip, active && styles.chipOn]}>
-                  <Text variant="small" tone={active ? 'onAccent' : 'default'}>
+                  <Text variant="small" tone={active ? 'onPrimary' : 'default'}>
                     {opt}
                   </Text>
                 </Pressable>
@@ -56,12 +42,7 @@ export function ReasonPicker({ reasons, value, onChange, followUpAnswer, onFollo
 }
 
 const styles = StyleSheet.create({
-  flex1: { flex: 1 },
-  row: { flexDirection: 'row', alignItems: 'center', gap: space(3), padding: space(4) },
-  border: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },
-  radio: { width: 20, height: 20, borderRadius: 10, borderWidth: 2, borderColor: colors.borderStrong },
-  radioOn: { borderColor: colors.accent, backgroundColor: colors.accent },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: space(2) },
-  chip: { paddingHorizontal: space(3), paddingVertical: space(2), borderRadius: radius.pill, borderWidth: 1, borderColor: colors.borderStrong, backgroundColor: colors.surfaceElevated },
-  chipOn: { backgroundColor: colors.accent, borderColor: colors.accent },
+  chip: { paddingHorizontal: space(3), paddingVertical: space(2), borderRadius: radius.pill, borderWidth: 1, borderColor: colors.borderStrong, backgroundColor: colors.subtle },
+  chipOn: { backgroundColor: colors.primary, borderColor: colors.primary },
 });

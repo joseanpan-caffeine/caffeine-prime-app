@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import type { ReactNode, RefObject } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -30,6 +30,8 @@ interface ScreenProps {
   /** Considera a safe area no topo (use em telas sem header nativo). */
   safeTop?: boolean;
   keyboard?: boolean;
+  /** Ref do ScrollView (para rolar até âncoras). */
+  scrollRef?: RefObject<ScrollView | null>;
 }
 
 export function Screen({
@@ -46,6 +48,7 @@ export function Screen({
   contentStyle,
   safeTop = false,
   keyboard = false,
+  scrollRef,
 }: ScreenProps) {
   const insets = useSafeAreaInsets();
   const paddingTop = safeTop ? insets.top + space(3) : space(3);
@@ -64,6 +67,7 @@ export function Screen({
 
   const body = scroll ? (
     <ScrollView
+      ref={scrollRef}
       style={styles.flex}
       contentContainerStyle={[
         padded && styles.padded,
@@ -73,7 +77,7 @@ export function Screen({
       keyboardShouldPersistTaps="handled"
       refreshControl={
         onRefresh ? (
-          <RefreshControl refreshing={!!refreshing} onRefresh={onRefresh} tintColor={colors.accent} colors={[colors.accent]} />
+          <RefreshControl refreshing={!!refreshing} onRefresh={onRefresh} tintColor={colors.gold} colors={[colors.gold]} />
         ) : undefined
       }
     >
@@ -115,8 +119,8 @@ const styles = StyleSheet.create({
   footer: {
     paddingHorizontal: space(4),
     paddingTop: space(3),
-    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopWidth: 1,
     borderTopColor: colors.border,
-    backgroundColor: colors.background,
+    backgroundColor: colors.surface,
   },
 });

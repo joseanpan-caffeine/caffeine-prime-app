@@ -1,12 +1,13 @@
 import { useState } from 'react';
-import { Alert, StyleSheet, Switch, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, Switch, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { errorMessage } from '@/api/client';
 import { useAddCard, useDashboard, usePaymentProfiles, useRemoveCard } from '@/api/hooks';
-import { Badge, Button, Card, EmptyState, ListItem, Row, Screen, Sheet, SkeletonCard, Text, toast } from '@/components';
+import { AlertCard, Badge, Button, EmptyState, Radio, Row, Screen, Sheet, SkeletonCard, Text, toast } from '@/components';
 import { CardForm } from '@/features/payments/CardForm';
 import { capabilityReasonLabel } from '@/lib/labels';
 import type { TokenizedCard } from '@/lib/vindi';
-import { colors, space } from '@/theme';
+import { colors, radius, space } from '@/theme';
 
 export default function CardsScreen() {
   const { data: cards, isLoading, isError, error, refetch, isRefetching } = usePaymentProfiles();
@@ -45,11 +46,9 @@ export default function CardsScreen() {
   return (
     <Screen title="Cartões" subtitle="O cartão padrão é usado nas cobranças da assinatura." onRefresh={refetch} refreshing={isRefetching} footer={<Button title="Adicionar cartão" onPress={() => setAdding(true)} disabled={canChange ? !canChange.allowed : false} />}>
       {canChange && !canChange.allowed ? (
-        <Card tone="accent">
-          <Text variant="small" tone="muted">
-            {capabilityReasonLabel(canChange.reason, canChange.until)}
-          </Text>
-        </Card>
+        <AlertCard variant="why_cant_edit" title="Troca de cartão indisponível">
+          {capabilityReasonLabel(canChange.reason, canChange.until)}
+        </AlertCard>
       ) : null}
       {isLoading ? (
         <>
@@ -61,31 +60,37 @@ export default function CardsScreen() {
       ) : !cards || cards.length === 0 ? (
         <EmptyState icon="💳" title="Nenhum cartão salvo" description="Adicione um cartão de crédito para as cobranças da assinatura." />
       ) : (
-        <Card padded={false} style={styles.list}>
-          {cards.map((c, idx) => (
-            <ListItem
-              key={c.id}
-              title={`${c.brand} •••• ${c.lastFour}`}
-              subtitle={`${c.holderName} · válido até ${c.expiration}`}
-              last={idx === cards.length - 1}
-              left={<Text variant="heading">💳</Text>}
-              right={
-                <View style={styles.right}>
-                  {c.isDefault ? <Badge label="Padrão" tone="accent" /> : null}
-                  {!c.isDefault ? (
-                    <Button title="Remover" variant="ghost" size="sm" full={false} onPress={() => confirmRemove(c.id, `${c.brand} final ${c.lastFour}`)} loading={removeCard.isPending && removeCard.variables === c.id} />
-                  ) : null}
+        <View>
+          {cards.map((c) => {
+            const expired = isExpired(c.expiration);
+            return (
+              <View key={c.id} style={[styles.cardRow, c.isDefault && styles.cardRowOn]}>
+                <Radio selected={c.isDefault} />
+                <Ionicons name="card-outline" size={20} color={colors.info} />
+                <View style={styles.flex1}>
+                  <Text variant="body">
+                    {c.brand} - final <Text variant="bodyStrong">{c.lastFour}</Text>
+                  </Text>
+                  <Text variant="caption" tone="dim">
+                    {c.holderName} · válido até {c.expiration}
+                  </Text>
                 </View>
-              }
-            />
-          ))}
-        </Card>
+                {expired ? <Badge label="Cartão expirado" tone="pending" size="sm" /> : c.isDefault ? <Badge label="Padrão" tone="accent" size="sm" /> : null}
+                {!c.isDefault ? (
+                  <Pressable onPress={() => confirmRemove(c.id, `${c.brand} final ${c.lastFour}`)} hitSlop={8} accessibilityRole="button" accessibilityLabel="Remover cartão" disabled={removeCard.isPending}>
+                    <Ionicons name="trash-outline" size={18} color={colors.danger} />
+                  </Pressable>
+                ) : null}
+              </View>
+            );
+          })}
+        </View>
       )}
 
       <Sheet visible={adding} onClose={() => setAdding(false)} title="Novo cartão">
         <Row style={styles.switchRow}>
           <Text variant="small">Usar como cartão padrão</Text>
-          <Switch value={setDefault} onValueChange={setSetDefault} trackColor={{ true: colors.accentDark, false: colors.borderStrong }} thumbColor={setDefault ? colors.accent : colors.textMuted} />
+          <Switch value={setDefault} onValueChange={setSetDefault} trackColor={{ true: colors.primaryStrong, false: colors.borderStrong }} thumbColor={setDefault ? colors.gold : colors.surface} />
         </Row>
         <CardForm submitLabel="Salvar cartão" onTokenized={onTokenized} busy={addCard.isPending} />
       </Sheet>
@@ -93,8 +98,19 @@ export default function CardsScreen() {
   );
 }
 
+/** "MM/YYYY" já vencido? */
+function isExpired(expiration: string): boolean {
+  const m = /^(\d{2})\/(\d{4})$/.exec(expiration);
+  if (!m) return false;
+  const now = new Date();
+  const year = Number(m[2]);
+  const month = Number(m[1]);
+  return year < now.getFullYear() || (year === now.getFullYear() && month < now.getMonth() + 1);
+}
+
 const styles = StyleSheet.create({
-  list: { paddingHorizontal: space(4) },
-  right: { alignItems: 'flex-end', gap: space(1) },
+  flex1: { flex: 1 },
+  cardRow: { flexDirection: 'row', alignItems: 'center', gap: space(3), backgroundColor: colors.surface, borderRadius: radius.sm, borderWidth: 1, borderColor: colors.borderStrong, padding: space(3), marginBottom: space(2) },
+  cardRowOn: { borderColor: colors.primary, backgroundColor: '#FFFBEB' },
   switchRow: { marginBottom: space(3) },
 });

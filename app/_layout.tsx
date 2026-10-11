@@ -1,14 +1,23 @@
 import { useEffect, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
-import { DarkTheme, Stack, ThemeProvider, useRouter, useSegments } from 'expo-router';
+import { DefaultTheme, Stack, ThemeProvider, useRouter, useSegments } from 'expo-router';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import {
+  Archivo_400Regular,
+  Archivo_500Medium,
+  Archivo_600SemiBold,
+  Archivo_700Bold,
+  Archivo_800ExtraBold,
+  Archivo_800ExtraBold_Italic,
+  useFonts,
+} from '@expo-google-fonts/archivo';
 import { ApiError } from '@/api/client';
 import { ToastHost } from '@/components';
 import { configureNotificationHandler } from '@/lib/push';
 import { bootstrapSession } from '@/lib/session';
 import { useAuthStore } from '@/store/auth';
-import { colors, fonts } from '@/theme';
+import { colors, font, setCustomFontsReady } from '@/theme';
 
 void SplashScreen.preventAutoHideAsync().catch(() => undefined);
 configureNotificationHandler();
@@ -24,15 +33,15 @@ const queryClient = new QueryClient({
 });
 
 const navTheme = {
-  ...DarkTheme,
+  ...DefaultTheme,
   colors: {
-    ...DarkTheme.colors,
-    primary: colors.accent,
+    ...DefaultTheme.colors,
+    primary: colors.gold,
     background: colors.background,
-    card: colors.background,
+    card: colors.surface,
     text: colors.text,
     border: colors.border,
-    notification: colors.accent,
+    notification: colors.gold,
   },
 };
 
@@ -60,9 +69,9 @@ function RootNavigator() {
   return (
     <Stack
       screenOptions={{
-        headerStyle: { backgroundColor: colors.background },
-        headerTintColor: colors.accent,
-        headerTitleStyle: { color: colors.text, fontFamily: fonts.display, fontWeight: '600' },
+        headerStyle: { backgroundColor: colors.surface },
+        headerTintColor: colors.text,
+        headerTitleStyle: { color: colors.text, fontSize: 16, ...font('heading', '700') },
         headerShadowVisible: false,
         headerBackButtonDisplayMode: 'minimal',
         contentStyle: { backgroundColor: colors.background },
@@ -89,21 +98,34 @@ function RootNavigator() {
 export default function RootLayout() {
   const status = useAuthStore((s) => s.status);
   const [booted, setBooted] = useState(false);
+  // Fontes Archivo (substituto de Acumin Pro). Se falhar, seguimos com a fonte do sistema.
+  const [fontsLoaded, fontsError] = useFonts({
+    Archivo_400Regular,
+    Archivo_500Medium,
+    Archivo_600SemiBold,
+    Archivo_700Bold,
+    Archivo_800ExtraBold,
+    Archivo_800ExtraBold_Italic,
+  });
+  const fontsSettled = fontsLoaded || !!fontsError;
+  if (fontsSettled) setCustomFontsReady(fontsLoaded && !fontsError);
 
   useEffect(() => {
     bootstrapSession().finally(() => setBooted(true));
   }, []);
 
   useEffect(() => {
-    if (booted && status !== 'booting') {
+    if (booted && fontsSettled && status !== 'booting') {
       SplashScreen.hideAsync().catch(() => undefined);
     }
-  }, [booted, status]);
+  }, [booted, fontsSettled, status]);
+
+  if (!fontsSettled) return null;
 
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider value={navTheme}>
-        <StatusBar style="light" />
+        <StatusBar style="dark" />
         <RootNavigator />
         <ToastHost />
       </ThemeProvider>
