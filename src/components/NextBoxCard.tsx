@@ -9,6 +9,8 @@ import { Text } from './Text';
 
 export interface NextBoxItem {
   id: string;
+  /** Handle do produto/sabor (fallback para imagem local). */
+  handle?: string;
   title: string;
   subtitle?: string;
   imageUrl?: string;
@@ -17,6 +19,7 @@ export interface NextBoxItem {
 
 export interface NextBoxGift {
   id: string;
+  handle?: string;
   title: string;
   imageUrl?: string;
 }
@@ -95,7 +98,7 @@ export function NextBoxCard({
             style={styles.item}
           >
             <View style={styles.thumbWrap}>
-              <ProductImage uri={item.imageUrl} title={item.title} size={72} bg={light ? colors.muted : '#F3F3F3'} desaturated={light} />
+              <ProductImage uri={item.imageUrl} handle={item.handle} title={item.title} size={72} bg={light ? colors.muted : '#F3F3F3'} desaturated={light} />
               <View style={[styles.qty, light && styles.qtyLight]}>
                 <Text variant="captionStrong" style={{ color: light ? colors.textSecondary : '#FFFFFF' }}>
                   {item.quantity}
@@ -138,7 +141,7 @@ export function NextBoxCard({
           {giftsOpen ? (
             <View style={styles.giftRow}>
               {gifts.map((g) => (
-                <ProductImage key={g.id} uri={g.imageUrl} title={g.title} size={56} bg={light ? colors.muted : '#F3F3F3'} desaturated={light} />
+                <ProductImage key={g.id} uri={g.imageUrl} handle={g.handle} title={g.title} size={56} bg={light ? colors.muted : '#F3F3F3'} desaturated={light} />
               ))}
             </View>
           ) : null}

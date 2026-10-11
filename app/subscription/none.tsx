@@ -34,7 +34,7 @@ export default function NoSubscription() {
 
   return (
     <Screen scroll={false} safeTop>
-      <Logo style={{ alignSelf: 'center', marginTop: 8 }} />
+      <Logo variant="dark" width={200} style={{ alignSelf: 'center', marginTop: 8 }} />
       <EmptyState
         icon="☕"
         title={`Olá${user?.firstName ? `, ${user.firstName}` : ''}! Você ainda não é Prime.`}

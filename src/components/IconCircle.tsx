@@ -1,8 +1,11 @@
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { StyleSheet, View, type ViewStyle } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 import { colors, radius } from '@/theme';
 import { Text } from './Text';
+
+const CAFFEINE_X = require('../../assets/brand/caffeine-x.svg');
 
 export type IoniconName = keyof typeof Ionicons.glyphMap;
 
@@ -26,13 +29,20 @@ export function IconCircle({ icon, children, size = 56, iconSize, bg = colors.su
   );
 }
 
-/** Ícone "X" do Caffeine Army X (até receber o SVG oficial). */
+/**
+ * Ícone oficial do Caffeine Army X (SVG em assets/brand) tingido com `color` (padrão roxo).
+ * Se o SVG falhar, cai para o glifo tipográfico "X".
+ */
 export function CaffeineXIcon({ size = 22, color = colors.purple }: { size?: number; color?: string }) {
-  return (
-    <Text style={{ fontSize: size, lineHeight: size + 2, color, fontWeight: '900', fontStyle: 'italic', letterSpacing: -1 }} accessibilityLabel="Caffeine Army X">
-      X
-    </Text>
-  );
+  const [failed, setFailed] = useState(false);
+  if (failed) {
+    return (
+      <Text style={{ fontSize: size, lineHeight: size + 2, color, fontWeight: '900', fontStyle: 'italic', letterSpacing: -1 }} accessibilityLabel="Caffeine Army X">
+        X
+      </Text>
+    );
+  }
+  return <Image source={CAFFEINE_X} style={{ width: size, height: size }} contentFit="contain" tintColor={color} onError={() => setFailed(true)} accessibilityLabel="Caffeine Army X" />;
 }
 
 const styles = StyleSheet.create({

@@ -12,7 +12,7 @@ export default function Welcome() {
         <View style={styles.mark}>
           <Ionicons name="cube-outline" size={34} color={colors.gold} />
         </View>
-        <Logo size="lg" />
+        <Logo variant="dark" width={220} />
         <Text variant="body" tone="secondary" center style={styles.lead}>
           Gerencie sua assinatura, sua caixa e seus pagamentos em um só lugar.
         </Text>

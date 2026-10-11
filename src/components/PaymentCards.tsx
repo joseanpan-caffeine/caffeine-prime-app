@@ -3,6 +3,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { colors, radius, shadows, space } from '@/theme';
 import { Button } from './Button';
+import { CardBrandLogo, PixLogo } from './CardBrandLogo';
 import { RadioRow } from './RadioRow';
 import { Text } from './Text';
 
@@ -84,7 +85,7 @@ export function PaymentFailedCard({ title = 'Não foi possível processar seu pa
       {card ? (
         <View style={styles.cardBox}>
           <View style={styles.brandDot}>
-            <Ionicons name="card" size={16} color={colors.warning} />
+            <CardBrandLogo brand={card.brand} />
           </View>
           <View style={styles.cardText}>
             <Text variant="body">
@@ -102,7 +103,15 @@ export function PaymentFailedCard({ title = 'Não foi possível processar seu pa
       </Text>
       <View>
         {options.map((o) => (
-          <RadioRow key={o.key} label={o.label} hint={o.hint} selected={value === o.key} onPress={() => onChange(o.key)} disabled={!o.enabled} />
+          <RadioRow
+            key={o.key}
+            label={o.label}
+            hint={o.hint}
+            selected={value === o.key}
+            onPress={() => onChange(o.key)}
+            disabled={!o.enabled}
+            right={o.key === 'pix' ? <PixLogo size={22} color={o.enabled ? colors.text : colors.textMuted} /> : o.key === 'card' && card ? <CardBrandLogo brand={card.brand} /> : undefined}
+          />
         ))}
       </View>
       <Button title={primaryLabel} onPress={onPrimary} loading={primaryLoading} />
@@ -119,6 +128,6 @@ const styles = StyleSheet.create({
   codeBox: { backgroundColor: colors.subtle, borderRadius: radius.sm, padding: space(3) },
   copyBtn: { alignSelf: 'center', minWidth: 160 },
   cardBox: { flexDirection: 'row', alignItems: 'center', gap: space(3), padding: space(3), borderRadius: radius.sm, borderWidth: 1, borderColor: colors.borderStrong, backgroundColor: colors.subtle },
-  brandDot: { width: 28, alignItems: 'center' },
+  brandDot: { width: 36, alignItems: 'center' },
   cardText: { flex: 1, gap: 2 },
 });

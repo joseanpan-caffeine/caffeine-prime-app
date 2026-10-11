@@ -6,7 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { errorMessage } from '@/api/client';
 import { authApi } from '@/api/endpoints';
-import { Button, Input, Screen, Text, toast } from '@/components';
+import { Button, Input, Logo, Screen, Text, toast } from '@/components';
 import { brDateToIso, isValidCpf, maskCpf, maskDateBR, maskPhone, onlyDigits } from '@/lib/format';
 import { completeSignIn } from '@/lib/session';
 import { colors, space } from '@/theme';
@@ -53,7 +53,7 @@ export default function Register() {
   const err = formState.errors;
 
   return (
-    <Screen keyboard title="Criar conta" subtitle="A mesma conta vale para a loja e para o app." style={styles.root}>
+    <Screen keyboard aboveTitle={<Logo variant="dark" width={220} style={styles.logo} />} title="Criar conta" subtitle="A mesma conta vale para a loja e para o app." style={styles.root}>
       <View style={styles.row}>
         <View style={styles.half}>
           <Controller
@@ -119,6 +119,7 @@ export default function Register() {
 
 const styles = StyleSheet.create({
   root: { backgroundColor: colors.surface },
+  logo: { alignSelf: 'center', marginBottom: space(4) },
   row: { flexDirection: 'row', gap: space(3) },
   half: { flex: 1 },
   submit: { marginTop: space(2) },

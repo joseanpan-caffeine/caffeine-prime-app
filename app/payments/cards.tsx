@@ -3,7 +3,7 @@ import { Alert, Pressable, StyleSheet, Switch, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { errorMessage } from '@/api/client';
 import { useAddCard, useDashboard, usePaymentProfiles, useRemoveCard } from '@/api/hooks';
-import { AlertCard, Badge, Button, EmptyState, Radio, Row, Screen, Sheet, SkeletonCard, Text, toast } from '@/components';
+import { AlertCard, Badge, Button, CardBrandLogo, EmptyState, Radio, Row, Screen, Sheet, SkeletonCard, Text, toast } from '@/components';
 import { CardForm } from '@/features/payments/CardForm';
 import { capabilityReasonLabel } from '@/lib/labels';
 import type { TokenizedCard } from '@/lib/vindi';
@@ -66,7 +66,7 @@ export default function CardsScreen() {
             return (
               <View key={c.id} style={[styles.cardRow, c.isDefault && styles.cardRowOn]}>
                 <Radio selected={c.isDefault} />
-                <Ionicons name="card-outline" size={20} color={colors.info} />
+                <CardBrandLogo brand={c.brand} />
                 <View style={styles.flex1}>
                   <Text variant="body">
                     {c.brand} - final <Text variant="bodyStrong">{c.lastFour}</Text>

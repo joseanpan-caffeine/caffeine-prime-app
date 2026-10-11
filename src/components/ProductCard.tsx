@@ -11,6 +11,8 @@ export interface ProductCardProps {
   flavor?: string;
   spec?: string;
   imageUrl?: string;
+  /** Handle do produto (fallback para imagem local). */
+  handle?: string;
   /** Preço cheio ("compra única"), riscado. */
   fullPriceLabel?: string;
   priceLabel: string;
@@ -28,7 +30,7 @@ export interface ProductCardProps {
  * badge EXCLUSIVO PRIME, imagem, nome bold, sabor, peso/doses, preço cheio riscado,
  * preço Prime + badge "15% OFF" verde, "Adicionar à caixa" primário + "Comprar" secundário.
  */
-export function ProductCard({ title, flavor, spec, imageUrl, fullPriceLabel, priceLabel, discountPercentage, exclusive = true, launch, outOfStock, onAdd, onBuy, width = 150 }: ProductCardProps) {
+export function ProductCard({ title, flavor, spec, imageUrl, handle, fullPriceLabel, priceLabel, discountPercentage, exclusive = true, launch, outOfStock, onAdd, onBuy, width = 150 }: ProductCardProps) {
   return (
     <View style={[styles.card, shadows.card, { width }]}>
       <View style={styles.badges}>
@@ -36,7 +38,7 @@ export function ProductCard({ title, flavor, spec, imageUrl, fullPriceLabel, pri
         {launch ? <Badge label="Lançamento" tone="launch" size="sm" /> : null}
       </View>
       <View style={styles.imageWrap}>
-        <ProductImage uri={imageUrl} title={title} width={width - space(6)} height={96} bg={colors.subtle} />
+        <ProductImage uri={imageUrl} handle={handle} title={title} width={width - space(6)} height={96} bg={colors.subtle} />
       </View>
       <Text variant="bodyStrong" numberOfLines={2} style={styles.title}>
         {title}
@@ -75,6 +77,8 @@ interface ProductTileProps {
   title: string;
   flavor?: string;
   imageUrl?: string;
+  /** Handle do produto (fallback para imagem local). */
+  handle?: string;
   priceLabel: string;
   fullPriceLabel?: string;
   discountPercentage?: number;
@@ -85,11 +89,11 @@ interface ProductTileProps {
 }
 
 /** Tile compacto (Figma "alerts" rodapé): imagem com botão "+" redondo, nome, preço, riscado + badge OFF. */
-export function ProductTile({ title, flavor, imageUrl, priceLabel, fullPriceLabel, discountPercentage, exclusive, outOfStock, onAdd, width = 150 }: ProductTileProps) {
+export function ProductTile({ title, flavor, imageUrl, handle, priceLabel, fullPriceLabel, discountPercentage, exclusive, outOfStock, onAdd, width = 150 }: ProductTileProps) {
   return (
     <View style={[styles.tile, { width }]}>
       <View style={styles.tileImage}>
-        <ProductImage uri={imageUrl} title={title} width={width} height={110} radiusSize={radius.sm} bg={colors.muted} desaturated={outOfStock} />
+        <ProductImage uri={imageUrl} handle={handle} title={title} width={width} height={110} radiusSize={radius.sm} bg={colors.muted} desaturated={outOfStock} />
         {exclusive ? (
           <View style={styles.crown}>
             <Ionicons name="star" size={12} color={colors.brandDark} />

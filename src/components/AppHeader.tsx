@@ -19,7 +19,7 @@ export function AppHeader({ onMenu, onProfile, safeTop = true }: AppHeaderProps)
       <Pressable onPress={onMenu} hitSlop={10} accessibilityRole="button" accessibilityLabel="Menu" style={styles.side}>
         <Ionicons name="menu-outline" size={26} color={colors.text} />
       </Pressable>
-      <Logo />
+      <Logo variant="dark" width={170} />
       <Pressable onPress={onProfile} hitSlop={10} accessibilityRole="button" accessibilityLabel="Perfil" style={[styles.side, styles.right]}>
         <Ionicons name="person-outline" size={22} color={colors.text} />
       </Pressable>

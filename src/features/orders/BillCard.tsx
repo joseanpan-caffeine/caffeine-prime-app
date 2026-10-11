@@ -30,7 +30,7 @@ export function BillCard({ bill, onPress }: { bill: Bill; onPress: () => void })
   return (
     <Pressable onPress={onPress} accessibilityRole="button" style={({ pressed }) => [styles.card, shadows.card, pressed && styles.pressed]}>
       <View style={styles.thumbWrap}>
-        <ProductImage uri={first?.imageUrl} title={first?.title ?? 'Pedido'} size={64} bg={colors.subtle} />
+        <ProductImage uri={first?.imageUrl} handle={first?.handle} title={first?.title ?? 'Pedido'} size={64} bg={colors.subtle} />
         {units > 1 ? (
           <View style={styles.count}>
             <Text variant="captionStrong" tone="secondary">

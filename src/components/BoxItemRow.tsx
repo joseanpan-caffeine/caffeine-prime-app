@@ -12,6 +12,8 @@ interface BoxItemRowProps {
   spec?: string;
   flavor?: string;
   imageUrl?: string;
+  /** Handle do produto/sabor (fallback para imagem local). */
+  handle?: string;
   recurrenceLabel?: string;
   priceLabel?: string;
   fullPriceLabel?: string;
@@ -25,11 +27,11 @@ interface BoxItemRowProps {
 }
 
 /** Item da caixa (edição): thumb, nome bold, "250g - 25 Doses", "⟳ Recorrência de 60 dias", botão "Editar". */
-export function BoxItemRow({ title, spec, flavor, imageUrl, recurrenceLabel, priceLabel, fullPriceLabel, control, onEdit, editLabel = 'Editar', disabled, expanded }: BoxItemRowProps) {
+export function BoxItemRow({ title, spec, flavor, imageUrl, handle, recurrenceLabel, priceLabel, fullPriceLabel, control, onEdit, editLabel = 'Editar', disabled, expanded }: BoxItemRowProps) {
   return (
     <View style={[styles.card, shadows.card]}>
       <View style={styles.row}>
-        <ProductImage uri={imageUrl} title={title} size={56} bg={colors.subtle} />
+        <ProductImage uri={imageUrl} handle={handle} title={title} size={56} bg={colors.subtle} />
         <View style={styles.text}>
           <Text variant="bodyStrong" numberOfLines={2}>
             {title}

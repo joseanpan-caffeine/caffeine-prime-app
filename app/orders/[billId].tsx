@@ -78,7 +78,7 @@ export default function OrderDetail() {
       <Card padded={false}>
         {bill.items.map((item, idx) => (
           <View key={item.id} style={[styles.itemRow, idx < bill.items.length - 1 && styles.itemBorder]}>
-            <ProductImage uri={item.imageUrl} title={item.title} size={56} bg={colors.subtle} />
+            <ProductImage uri={item.imageUrl} handle={item.handle} title={item.title} size={56} bg={colors.subtle} />
             <View style={styles.flex1}>
               <Text variant="bodyStrong" numberOfLines={2}>
                 {item.title}

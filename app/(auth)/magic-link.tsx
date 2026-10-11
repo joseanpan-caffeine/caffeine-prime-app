@@ -6,7 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { errorMessage } from '@/api/client';
 import { authApi, type MagicLinkResponse } from '@/api/endpoints';
-import { Button, Card, EmptyState, Input, Screen, Text, toast } from '@/components';
+import { Button, Card, EmptyState, Input, Logo, Screen, Text, toast } from '@/components';
 import { getDeviceName } from '@/lib/deviceName';
 import { FAKE_AUTH } from '@/lib/env';
 import { completeSignIn } from '@/lib/session';
@@ -76,7 +76,7 @@ export default function MagicLink() {
   }
 
   return (
-    <Screen keyboard title="Entrar sem senha" subtitle="Enviamos um link para o seu e-mail. Toque nele no celular e pronto." style={styles.root}>
+    <Screen keyboard aboveTitle={<Logo variant="dark" width={220} style={styles.logo} />} title="Entrar sem senha" subtitle="Enviamos um link para o seu e-mail. Toque nele no celular e pronto." style={styles.root}>
       <Controller
         control={control}
         name="email"
@@ -105,6 +105,7 @@ export default function MagicLink() {
 
 const styles = StyleSheet.create({
   root: { backgroundColor: colors.surface },
+  logo: { alignSelf: 'center', marginBottom: space(4) },
   actions: { marginTop: space(2) },
   token: { marginBottom: space(3) },
   deep: { marginTop: space(2) },

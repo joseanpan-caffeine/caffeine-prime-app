@@ -13,6 +13,7 @@ import {
   BannerPlaceholder,
   Button,
   CaffeineXIcon,
+  CardBrandLogo,
   Carousel,
   DuoCards,
   EmptyState,
@@ -160,6 +161,7 @@ export default function Home() {
         />
         <SectionRow
           icon="cash-outline"
+          iconNode={sub?.paymentProfile ? <CardBrandLogo brand={sub.paymentProfile.brand} width={26} height={16} /> : undefined}
           title="Pagamento"
           subtitle={sub?.paymentProfile ? `${sub.paymentProfile.brand} (final ${sub.paymentProfile.lastFour})` : 'Cadastre um cartão'}
           onPress={() => router.push('/payments/cards')}
@@ -424,8 +426,8 @@ function NextBoxes({ sub, caps, catalog }: { sub: Subscription; caps: Capabiliti
   const router = useRouter();
   const products = sub.items.filter((i) => !i.isGift);
   const gifts = sub.items.filter((i) => i.isGift);
-  const items: NextBoxItem[] = products.map((i) => ({ id: i.id, title: i.title, subtitle: i.flavor, imageUrl: i.imageUrl, quantity: i.quantity }));
-  const giftList: NextBoxGift[] = gifts.map((g) => ({ id: g.id, title: g.title, imageUrl: g.imageUrl ?? catalog?.gifts.find((c) => c.handle === g.handle)?.imageUrl }));
+  const items: NextBoxItem[] = products.map((i) => ({ id: i.id, handle: i.handle, title: i.title, subtitle: i.flavor, imageUrl: i.imageUrl, quantity: i.quantity }));
+  const giftList: NextBoxGift[] = gifts.map((g) => ({ id: g.id, handle: g.handle, title: g.title, imageUrl: g.imageUrl ?? catalog?.gifts.find((c) => c.handle === g.handle)?.imageUrl }));
   const dates = upcomingBillingDates(sub, 2);
   const editUntil = editUntilIso(sub, caps);
   const pending = caps.hasPendingBill;
@@ -490,6 +492,7 @@ function ExclusiveItems({ sub, catalog, canEdit }: { sub: Subscription; catalog:
             flavor={p.flavors?.[0]?.title ?? p.category}
             spec={p.flavors && p.flavors.length > 1 ? `${p.flavors.length} sabores` : undefined}
             imageUrl={p.imageUrl}
+            handle={p.handle}
             fullPriceLabel={pct > 0 ? formatMoney(p.price) : undefined}
             priceLabel={formatMoney(pct > 0 ? final : p.price)}
             discountPercentage={pct > 0 ? pct : undefined}
@@ -528,7 +531,7 @@ function Benefits({ data, catalog }: { data: Dashboard; catalog?: Catalog }) {
             const cost = 300 + ((i * 199) % 700); // custo em pontos: a API ainda não expõe
             return (
               <View key={g.handle} style={styles.giftCard}>
-                <ProductImage uri={g.imageUrl} title={g.title} width={126} height={110} bg={colors.subtle} />
+                <ProductImage uri={g.imageUrl} handle={g.handle} title={g.title} width={126} height={110} bg={colors.subtle} />
                 <Text variant="bodyStrong" numberOfLines={1}>
                   {g.title}
                 </Text>

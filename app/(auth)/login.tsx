@@ -43,7 +43,7 @@ export default function Login() {
 
   return (
     <Screen keyboard style={styles.root}>
-      <Logo style={styles.logo} />
+      <Logo variant="dark" width={220} style={styles.logo} />
       <Text variant="title">Bem-vindo de volta</Text>
       <Text variant="body" tone="secondary" style={styles.subtitle}>
         Entre com a mesma conta da loja Caffeine Army.

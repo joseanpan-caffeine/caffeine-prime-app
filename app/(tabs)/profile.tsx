@@ -19,7 +19,7 @@ import {
   useUpdateNotificationPreferences,
   useUpdateProfile,
 } from '@/api/hooks';
-import { AppHeader, Button, Input, Logo, Screen, SectionList, SectionRow, Sheet, Text, toast } from '@/components';
+import { AppHeader, Button, CardBrandLogo, Input, Logo, Screen, SectionList, SectionRow, Sheet, Text, toast } from '@/components';
 import { maskPhone, onlyDigits } from '@/lib/format';
 import { API_URL, FAKE_AUTH } from '@/lib/env';
 import { signOut } from '@/lib/session';
@@ -120,13 +120,14 @@ export default function Profile() {
             </Text>
           ) : null}
         </View>
-        <Logo size="sm" color={colors.primaryStrong} />
+        <Logo variant="white" width={120} />
       </View>
       <Button title="Editar dados" variant="secondary" size="sm" style={styles.editBtn} onPress={() => setEditing(true)} />
 
       <SectionList title="Assinatura">
         <SectionRow
           icon="cash-outline"
+          iconNode={sub?.paymentProfile ? <CardBrandLogo brand={sub.paymentProfile.brand} width={26} height={16} /> : undefined}
           title="Cartões"
           subtitle={sub?.paymentProfile ? `${sub.paymentProfile.brand} (final ${sub.paymentProfile.lastFour})` : 'Gerenciar formas de pagamento'}
           onPress={() => router.push('/payments/cards')}

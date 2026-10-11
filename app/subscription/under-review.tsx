@@ -18,7 +18,7 @@ export default function UnderReview() {
 
   return (
     <Screen scroll={false} safeTop>
-      <Logo style={{ alignSelf: 'center', marginTop: 8 }} />
+      <Logo variant="dark" width={200} style={{ alignSelf: 'center', marginTop: 8 }} />
       <EmptyState
         icon="🔎"
         title="Assinatura em análise"

@@ -286,6 +286,7 @@ function BoxEditor({ sub, catalog, canEdit, onRefresh, refreshing, header }: Edi
             flavor={flavor?.title ?? (product.flavors?.length ? 'Escolher sabor' : undefined)}
             spec={product.category}
             imageUrl={product.imageUrl}
+            handle={item.handle}
             recurrenceLabel={item.recurrence === null ? 'Vem em todo ciclo' : item.recurrence === 'off' ? 'Recorrência de 60 dias · pula o próximo' : 'Recorrência de 60 dias'}
             priceLabel={`${formatMoney(price.final)}/un`}
             fullPriceLabel={price.pct > 0 ? formatMoney(price.full) : undefined}
@@ -316,6 +317,7 @@ function BoxEditor({ sub, catalog, canEdit, onRefresh, refreshing, header }: Edi
                   title={product.title}
                   flavor={product.flavors?.[0]?.title ?? product.category}
                   imageUrl={product.imageUrl}
+                  handle={product.handle}
                   priceLabel={formatMoney(pct > 0 ? final : product.price)}
                   fullPriceLabel={pct > 0 ? formatMoney(product.price) : undefined}
                   discountPercentage={pct > 0 ? pct : undefined}
@@ -347,7 +349,7 @@ function BoxEditor({ sub, catalog, canEdit, onRefresh, refreshing, header }: Edi
                   accessibilityState={{ checked: selected }}
                   style={[styles.giftRow, idx < gifts.length - 1 && styles.giftBorder]}
                 >
-                  <ProductImage uri={g.imageUrl} title={g.title} size={48} bg={colors.subtle} />
+                  <ProductImage uri={g.imageUrl} handle={g.handle} title={g.title} size={48} bg={colors.subtle} />
                   <Text variant="body" style={styles.flex1}>
                     {g.title}
                   </Text>

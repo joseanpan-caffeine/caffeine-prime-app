@@ -18,6 +18,8 @@ interface ScreenProps {
   scroll?: boolean;
   title?: string;
   subtitle?: string;
+  /** Conteúdo rolável acima do título (ex.: logo nas telas de auth). */
+  aboveTitle?: ReactNode;
   /** Conteúdo fixo acima do conteúdo rolável (ex.: cabeçalho). */
   header?: ReactNode;
   /** Barra fixa no rodapé (ex.: CTA). */
@@ -39,6 +41,7 @@ export function Screen({
   scroll = true,
   title,
   subtitle,
+  aboveTitle,
   header,
   footer,
   refreshing,
@@ -54,8 +57,9 @@ export function Screen({
   const paddingTop = safeTop ? insets.top + space(3) : space(3);
   const paddingBottom = (footer ? space(3) : insets.bottom + space(6)) + space(2);
 
-  const heading = (title || subtitle) && (
+  const heading = (title || subtitle || aboveTitle) && (
     <View style={styles.heading}>
+      {aboveTitle}
       {title ? <Text variant="title">{title}</Text> : null}
       {subtitle ? (
         <Text variant="small" tone="muted" style={styles.subtitle}>
