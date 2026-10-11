@@ -60,6 +60,8 @@ class ApiError implements Exception {
       case DioExceptionType.unknown:
       case DioExceptionType.badResponse:
         return const ApiError(code: codeNetwork, message: 'Sem conexão com o servidor. Verifique sua internet.');
+      default:
+        return const ApiError(code: codeNetwork, message: 'Sem conexão com o servidor. Verifique sua internet.');
     }
   }
 

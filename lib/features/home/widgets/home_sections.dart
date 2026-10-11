@@ -46,7 +46,7 @@ class HomeSections extends StatelessWidget {
               title: 'Forma de pagamento',
               subtitle: s?.paymentProfile == null
                   ? 'Nenhum cartão cadastrado'
-                  : '${s!.paymentProfile!.brand} •••• ${s!.paymentProfile!.lastFour}',
+                  : '${s!.paymentProfile!.brand} •••• ${s.paymentProfile!.lastFour}',
               disabled: s != null && !caps.canChangeCard.allowed,
               onTap: () => guardCapability(context, caps.canChangeCard, () => context.push(Routes.cards),
                   title: 'Troca de cartão'),

@@ -143,6 +143,8 @@ class LocalNotifications {
             iOS: DarwinNotificationDetails(),
           ),
           androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+          // ignore: deprecated_member_use
+          uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
           matchDateTimeComponents: DateTimeComponents.time, // repete diariamente
           payload: 'app://routine?item=${item.id}',
         );

@@ -5,6 +5,11 @@ analyzer:
     # Avisos que não devem travar a verificação da POC.
     unused_import: warning
     invalid_annotation_target: ignore
+  exclude:
+    - build/**
+    - android/**
+    - ios/**
+    - web/**
 
 linter:
   rules:

@@ -13,7 +13,6 @@ import 'features/auth/register_screen.dart';
 import 'features/auth/welcome_screen.dart';
 import 'features/box_editor/box_editor_screen.dart';
 import 'features/cards/cards_screen.dart';
-import 'features/cards/new_card_screen.dart';
 import 'features/health/health_consent_screen.dart';
 import 'features/health/health_screen.dart';
 import 'features/home/home_screen.dart';
