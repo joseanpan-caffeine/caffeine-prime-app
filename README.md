@@ -1,98 +1,175 @@
-# Caffeine Prime — app (iOS / Android)
+# Caffeine Army Prime — app Flutter (POC)
 
-App de gestão da assinatura **Caffeine Army Prime**, em React Native + Expo (SDK 57), TypeScript e Expo Router.
-O app conversa **somente com o BFF** (`/v1`); nenhuma chave de terceiro fica no app, exceto a chave pública da Vindi (tokenização de cartão).
+Aplicativo iOS/Android de gestão da assinatura **Prime** da Caffeine Army, com os módulos de engajamento preparados (rotina, saúde/wearables e assistente Prime IA). Fala **só com o BFF** (`caffeine-prime-bff`, contrato em `api.ts` / `ROUTES.md`); nunca com a Prime API direto.
 
-- Contrato: `src/api/contracts.ts` (tipos públicos do BFF) e `ROUTES.md` (rotas, corpos e contas de teste).
-- Arquitetura: `docs-arquitetura.md`.
+> UI em português; identificadores em inglês; comentários em português. Design: tema **claro**, tokens em `lib/core/theme/tokens.dart`, fonte Archivo via `google_fonts`.
 
-## Como rodar
+---
 
-Pré-requisitos: Node 22+, app **Expo Go** no celular (ou simulador) e o BFF fake rodando em `http://localhost:3333`.
+## 1. Pré-requisitos no Windows
 
-```bash
-npm install
-cp .env.example .env        # EXPO_PUBLIC_API_URL=http://localhost:3333/v1, EXPO_PUBLIC_FAKE_AUTH=1
-npx expo start              # ou: npm run ios | npm run android | npm run web
+### Flutter
+Opção A (winget):
+```powershell
+winget install --id=Google.Flutter -e
+```
+Opção B (zip): baixe o SDK estável em https://docs.flutter.dev/get-started/install/windows, extraia em `C:\dev\flutter` (sem espaços no caminho) e adicione `C:\dev\flutter\bin` ao **PATH** do usuário (Configurações › Sistema › Sobre › Configurações avançadas › Variáveis de ambiente).
+
+Depois, em um PowerShell novo:
+```powershell
+flutter --version      # precisa ser 3.24+ (Dart 3.5+)
+flutter doctor         # mostra o que falta
 ```
 
-> Celular físico: o `localhost` do celular não é o do computador. Troque `EXPO_PUBLIC_API_URL` para o IP da sua máquina na rede (ex.: `http://192.168.0.10:3333/v1`) ou use `npx expo start --tunnel` com o BFF exposto.
+### Android
+1. Instale o **Android Studio** (https://developer.android.com/studio). No assistente, inclua Android SDK, SDK Platform-Tools e um emulador.
+2. Em Android Studio › More Actions › **SDK Manager** › SDK Tools: marque *Android SDK Command-line Tools* e *Android SDK Build-Tools*.
+3. Rode `flutter doctor --android-licenses` e aceite tudo.
+4. Crie um emulador em **Device Manager** (ex.: Pixel 7, API 34). Inicie-o antes de `flutter run`.
 
-Outros scripts: `npm run typecheck` (tsc), `npm run lint` (eslint via `expo lint`), `npm run icons` (regenera os PNGs placeholder em `assets/`).
+### iOS
+Build iOS **exige um Mac** com Xcode. No Windows você consegue compilar e testar Android e Web; o `ios/` só é usado no Mac.
 
-### Contas de teste (BFF fake, senha `prime123`)
+---
 
+## 2. Gerar as pastas de plataforma (uma vez)
+
+Este repositório **não** contém `android/` nem `ios/`. Na raiz do projeto, rode exatamente:
+
+```powershell
+flutter create --org com.caffeinearmy --project-name caffeine_prime --platforms=android,ios,web .
+```
+
+Isso cria `android/`, `ios/` e `web/` com `applicationId` / bundle id **`com.caffeinearmy.caffeine_prime`**. Se quiser exatamente `com.caffeinearmy.prime`, edite depois `android/app/build.gradle` (`applicationId`) e, no Xcode, o Bundle Identifier. Os arquivos já existentes (`lib/`, `pubspec.yaml`, `assets/`) não são sobrescritos.
+
+Depois de gerar, ajustes necessários:
+
+**Android** (`android/app/build.gradle`): `minSdkVersion 26` e `compileSdkVersion 34` (exigidos por `health` e `flutter_local_notifications`). Em `android/app/src/main/AndroidManifest.xml`, dentro de `<manifest>`:
+```xml
+<uses-permission android:name="android.permission.INTERNET"/>
+<uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+<uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/>
+<uses-permission android:name="android.permission.health.READ_STEPS"/>
+<uses-permission android:name="android.permission.health.READ_ACTIVE_CALORIES_BURNED"/>
+<uses-permission android:name="android.permission.health.READ_EXERCISE"/>
+<uses-permission android:name="android.permission.health.READ_SLEEP"/>
+```
+Dentro de `<activity android:name=".MainActivity" …>`, deep links:
+```xml
+<intent-filter>
+  <action android:name="android.intent.action.VIEW"/>
+  <category android:name="android.intent.category.DEFAULT"/>
+  <category android:name="android.intent.category.BROWSABLE"/>
+  <data android:scheme="caffeineprime"/>
+  <data android:scheme="app"/>
+</intent-filter>
+<!-- Health Connect: permissão -->
+<intent-filter>
+  <action android:name="androidx.health.ACTION_SHOW_PERMISSIONS_RATIONALE"/>
+</intent-filter>
+```
+Para Health Connect no Android 14+, a `MainActivity` precisa estender `FlutterFragmentActivity` (veja a doc do pacote `health`).
+
+**iOS** (`ios/Runner/Info.plist`): `NSHealthShareUsageDescription`, `NSHealthUpdateUsageDescription`, `CFBundleURLTypes` com os esquemas `caffeineprime` e `app`; no Xcode, capabilities *HealthKit*, *Push Notifications*, *Background Modes › Remote notifications* e *Sign in with Apple*. Ícone de launcher: use `assets/icon.png` com o pacote `flutter_launcher_icons` (não incluído) ou substitua manualmente os mipmaps/AppIcon.
+
+---
+
+## 3. Rodar contra o BFF fake
+
+1. Suba o BFF (`caffeine-prime-bff`) em modo fake na porta 3333 (`/v1`). Ele aceita CORS de `localhost` em qualquer porta.
+2. **Web (rápido, para conferir telas):**
+   ```powershell
+   .\rodar.ps1
+   # = flutter run -d chrome --dart-define=API_URL=http://localhost:3333/v1 --dart-define=FAKE_AUTH=true --web-port 8081
+   ```
+3. **Emulador Android:** o padrão de `API_URL` já é `http://10.0.2.2:3333/v1` (o host visto de dentro do emulador):
+   ```powershell
+   flutter run -d emulator-5554 --dart-define=FAKE_AUTH=true
+   ```
+4. **Aparelho físico:** use o IP da sua máquina na rede: `--dart-define=API_URL=http://192.168.0.10:3333/v1`.
+
+`FAKE_AUTH=true` faz o app: mostrar um seletor de contas de teste; enviar `idToken = "fake:<email>"` no login Google/Apple; exibir o `debugToken` do link mágico; e gerar `fake-token-<últimos 4>` em vez de tokenizar o cartão na Vindi.
+
+### Contas de teste (senha `prime123`)
 | E-mail | Cenário |
 |---|---|
-| ativa@teste.com | Anual, ativa, 2 créditos de pausa, cobrança em 12 dias, pedido em trânsito |
-| janela@teste.com | Semestral, cobrança amanhã (janela D-3 fechada → edição e pedido de pausa bloqueados) |
-| pausada@teste.com | Anual, pausada: 1 ciclo já faturado em R$ 0,00 ("Ciclo pausado" no histórico), falta 1 |
-| pendente@teste.com | Trimestral, fatura pendente com PIX |
-| agendada@teste.com | Anual, com mudança agendada (botão "Desfazer") |
-| cancelada@teste.com | cancelada há 20 dias (pode reativar) |
-| analise@teste.com | fraud_review → tela "Em análise" |
+| ativa@teste.com | Anual ativa, 2 créditos de pausa, pedido em trânsito |
+| janela@teste.com | Semestral, cobrança amanhã (janela D-3 fechada) |
+| pausada@teste.com | Anual pausada por 2 ciclos (fatura R$ 0,00) |
+| pendente@teste.com | Trimestral com fatura pendente e PIX |
+| agendada@teste.com | Anual com mudança agendada |
+| cancelada@teste.com | Cancelada há 20 dias (pode reativar) |
+| analise@teste.com | Em análise antifraude |
 | mensal@teste.com | Mensal, sem créditos de pausa |
-| semassinatura@teste.com | cliente sem assinatura → tela "Sem assinatura" |
-| novata@teste.com | Anual com 1 cobrança paga → pausa "Disponível a partir da 4ª cobrança paga" |
-| fim-fidelidade@teste.com | Anual com fidelidade cumprida → pode cancelar até a véspera da cobrança |
+| semassinatura@teste.com | Cliente sem assinatura |
+| novata@teste.com | 1 cobrança paga: não pode pausar nem cancelar |
+| fim-fidelidade@teste.com | Fidelidade cumprida: pode cancelar |
 
-### Modo fake (`EXPO_PUBLIC_FAKE_AUTH=1`)
+---
 
-- Botões **Google/Apple** abrem um sheet pedindo o e-mail e enviam `idToken: "fake:<email>"` para `POST /auth/google|apple`.
-- **Link mágico**: a tela mostra o `debugToken` devolvido pelo BFF e um botão "Usar este token" (`POST /auth/magic-link/exchange`). O deep link equivalente é `caffeineprime://auth/magic/<token>` — para testar: `npx uri-scheme open "caffeineprime://auth/magic/<token>" --ios` (ou `--android`).
-- **Cartões**: o formulário não chama a Vindi; envia `gatewayToken: "fake-token-<últimos 4 dígitos>"`.
-- A tela de login já vem preenchida com `ativa@teste.com / prime123`.
+## 4. Verificar o código
 
-## Apontar para staging / produção
+```powershell
+.\verificar.ps1
+```
+Roda `flutter --version`, `flutter pub get`, `flutter analyze` e `flutter test`, gravando tudo em **`verificacao.txt`** (continua mesmo com erro). Cole esse arquivo no chat para o Claude corrigir.
 
-Variáveis `EXPO_PUBLIC_*` são lidas em build time (Metro). Para trocar de ambiente:
+Pontos marcados com **`VERIFICAR na compilação`** no código isolam APIs de plugins cuja assinatura pode variar entre versões: `lib/core/notifications/local_notifications.dart`, `lib/core/push/firebase_push_service.dart`, `lib/features/health/device_health_service.dart`, `lib/features/auth/social_sign_in.dart`, `lib/app.dart` (app_links). Qualquer erro de compilação nesses plugins fica contido nesses arquivos.
 
-```bash
-EXPO_PUBLIC_API_URL=https://bff-staging.caffeinearmy.com.br/v1 EXPO_PUBLIC_FAKE_AUTH=0 npx expo start --clear
+---
+
+## 5. Configurar depois (placeholders)
+
+| Recurso | O que fazer | Onde no código |
+|---|---|---|
+| **Push (Firebase)** | Criar projeto no Firebase; adicionar `android/app/google-services.json` e `ios/Runner/GoogleService-Info.plist` (não versionar); aplicar o plugin Google Services no Gradle. Sem isso, `Firebase.initializeApp()` falha e o app usa `NoopPushService` sem quebrar. O token vai para `POST /me/devices` com `pushProvider: fcm/apns`. | `lib/core/push/` |
+| **Google Sign-In** | Criar OAuth Client IDs (Android com SHA-1, iOS, Web). Passar o Client ID web em `--dart-define=GOOGLE_WEB_CLIENT_ID=…` (vira `serverClientId`, necessário para o `idToken`). iOS: `GIDClientID` + URL scheme reverso no Info.plist. | `lib/data/auth_controller.dart`, `lib/features/auth/social_sign_in.dart` |
+| **Sign in with Apple** | Capability no Xcode + Service ID no Apple Developer; o BFF valida o `identityToken` em `/auth/apple`. Botão aparece só no iOS (e em FAKE_AUTH). | `lib/features/auth/social_sign_in.dart` |
+| **Vindi** | Nada no app: `GET /payments/vindi-config` entrega `publicKey`/`apiUrl`; o app tokeniza em `{apiUrl}/public/payment_profiles` e envia só o `gatewayToken`. | `lib/api/endpoints/vindi_api.dart` |
+| **Analytics** | Trocar `NoopAnalytics` por Firebase Analytics/Amplitude. Todo evento carrega `customerId` (= shopifyCustomerId) para cruzar com o BigQuery. | `lib/core/analytics.dart` |
+| **Deep links universais** | Publicar `assetlinks.json` / `apple-app-site-association` para `https://…/account/prime/*`. | `lib/core/deep_links.dart` |
+
+---
+
+## 6. Onde está cada coisa
+
+```
+lib/
+  main.dart, app.dart            bootstrap, ProviderScope, MaterialApp.router, listener de deep links
+  router.dart                    go_router 14 (redirect por sessão, abas com StatefulShellRoute)
+  core/                          env (--dart-define), tema/tokens/tipografia, formatação pt-BR,
+                                 imagens de produto, bandeiras, analytics, deep links, push/, notifications/
+  api/                           ApiClient (dio, bearer, refresh single-flight, Idempotency-Key), ApiError,
+                                 models/ (1:1 com api.ts, por domínio), endpoints/ (uma classe por domínio)
+  data/                          providers Riverpod, SessionStore (secure storage), AuthController,
+                                 SubscriptionActions (mutações), ConsentsController
+  features/
+    auth/                        welcome, login, registro, link mágico, login social (isolado)
+    home/                        dashboard + widgets (WelcomeCard, alertas, próximas caixas, duo, exclusivos, seções)
+    box_editor/                  editor de caixa (controller + tela)
+    orders/, pay/, cards/, address/
+    subscription/                meu plano, pausar, cancelar, status (pausada/cancelada/análise/sem assinatura)
+    profile/                     perfil, dados, notificações, consentimentos (LGPD)
+    routine/                     rotina (check-ins, streak, heatmap, lembretes, estoque) — frente 2
+    health/                      HealthService (abstração) + DeviceHealthService (pacote health) — frente 2
+    assistant/                   Prime IA (threads + chat markdown) — frente 5
+test/                            modelos (round-trip), formatação, imagens, streak/deep links
 ```
 
-Os perfis de `eas.json` (`development`, `preview`, `production`) já definem `EXPO_PUBLIC_API_URL` e `EXPO_PUBLIC_FAKE_AUTH` por ambiente — ajuste as URLs reais do BFF antes do primeiro `eas build`.
-Push notifications só funcionam em **development build** (`eas build --profile development`), não no Expo Go; o app detecta e ignora o registro quando não dá (web, Expo Go, simulador, sem permissão).
+**Consentimentos (LGPD)**: `GET/PUT /me/consents`, versões em `GET /config.consentVersions`. Gates: Rotina pede `routine_data` no primeiro acesso; Saúde pede `health_data` em tela própria **antes** de qualquer permissão do sistema; Prime IA pede `ai_assistant`; push pede `push`. Tudo revogável em Perfil › Consentimentos.
 
-## Ligar Google / Apple reais
+---
 
-1. Defina `EXPO_PUBLIC_FAKE_AUTH=0`.
-2. **Google** (`expo-auth-session/providers/google`): crie os client IDs no Google Cloud (iOS, Android e Web) e preencha `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID`, `EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID`, `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID`. O iOS/Android exigem development build (o Expo Go não aceita client IDs nativos). O app envia o `id_token` para `POST /auth/google`.
-3. **Apple** (`expo-apple-authentication`): o `app.config.ts` já tem `ios.usesAppleSignIn: true` e o plugin; habilite "Sign in with Apple" no App ID (Apple Developer). O app envia `identityToken` e `fullName` (só no primeiro login) para `POST /auth/apple`. Botão aparece apenas no iOS (ou em modo fake).
-4. **Link mágico** em produção: configure o Universal Link / App Link para `caffeineprime://auth/magic/:token` (o `intentFilter` Android já está no `app.config.ts`; para iOS adicione `associatedDomains` quando houver domínio).
-5. **Vindi**: `GET /payments/vindi-config` devolve `publicKey` e `apiUrl`; o app faz `POST {apiUrl}/public/payment_profiles` com Basic auth (`publicKey:`) e só envia o `gateway_token` ao BFF.
+## 7. Invariantes (contexto-prime.md §12)
 
-## Estrutura
-
-```
-app/                      Expo Router (arquivo = tela)
-  _layout.tsx             QueryClientProvider, bootstrap da sessão, redirecionamentos, Toast, StatusBar
-  index.tsx               decide (auth) ou (tabs)
-  (auth)/                 welcome, login, magic-link, register
-  auth/magic/[token].tsx  deep link do link mágico
-  (tabs)/                 index (Home), box (Minha caixa), orders (Pedidos), profile (Perfil)
-  subscription/           pause, paused, cancel, canceled, under-review, none
-  payments/               cards, pay/[billId] (PIX / cartão atual / cartão novo)
-  shipping/address.tsx    CEP → cotação → formulário → salvar
-  orders/[billId].tsx     detalhe da fatura com itens, pagamento e rastreio
-src/
-  api/                    contracts.ts (tipos), client.ts (fetch + refresh + Idempotency-Key), endpoints.ts, hooks.ts (react-query)
-  components/             Screen, Card, Button, Badge, ListItem, Money, Skeleton, EmptyState, Sheet, Stepper, Toast, Input, Text, Section
-  features/               auth (SocialButtons), box (useBoxEditor), orders (BillCard), payments (CardForm), subscription (ReasonPicker)
-  lib/                    env, secureStorage, session, push, vindi, socialAuth, format, labels
-  store/auth.ts           zustand: tokens + usuário + status da sessão
-  theme/                  tokens (cores, espaçamento base 4, radius 16, tipografia com fontFamily para GT Pressura/Rund)
-scripts/generate-icons.mjs  gera os PNGs placeholder
-```
-
-### Regras que o app NÃO reimplementa
-
-Tudo que é regra de negócio (janelas D-3/D-5 em America/Sao_Paulo, pausa a partir da 4ª cobrança, créditos de pausa, trava de fidelidade, melhor desconto) vem do BFF em `dashboard.capabilities` (`allowed`, `reason`, `until`, `closesAt`). O app só exibe `allowed: false` com o motivo (`src/lib/labels.ts → capabilityReasonLabel`) e desabilita o CTA.
-
-### Suposições sobre o contrato (confirmar com o BFF)
-
-- `POST /auth/magic-link` em modo fake devolve `{ sent: true, debugToken?: string }` (o campo `debugToken` não está em `contracts.ts`; é opcional no app).
-- `BoxItemInput.handle` é o handle do **sabor** quando o produto tem `flavors`, senão o handle do produto. `Subscription.items[].handle` segue a mesma convenção (o app procura o produto do catálogo pelo handle do produto ou de um dos sabores).
-- A troca de recorrência 60 dias de um item **já existente** na assinatura usa `PATCH /me/subscription/items/:itemId/recurrence` imediatamente (quando não há outras edições pendentes); itens novos/edições em lote mandam `recurrence` dentro do `SchedulingRequest`.
-- `GET /me/subscription`, `/me/tracking` e `/me/shipping-address` podem responder 404 → tratados como "não há".
-- O QR do PIX vem como imagem (`pix.qrCodeImageUrl`), renderizada com `expo-image`.
+- UI em português BR. O app **nunca** fala com `/admin`, `/tasks` ou `/webhooks`; só com o BFF, autenticado por usuário (identidade = `shopifyCustomerId`).
+- **Nenhum preço, produto, plano, brinde ou desconto fixo** no código: tudo vem da API (`/me/catalog`, `/me/subscription`, `/preview`). O app **não recalcula** desconto; mostra o que a API devolve. As imagens embutidas são só fallback visual.
+- **Prazos vêm do servidor**: `capabilities.*.closesAt/until` (fuso America/Sao_Paulo). O app formata preservando a hora de parede do offset (`Fmt.parseWall`) e não calcula D-3/D-5 localmente.
+- O ciclo é de **30 dias**: só `nextBillingAt` é data confirmada; as seguintes aparecem como "Previsão".
+- **Nunca guardar o id da assinatura**: todas as rotas são `/me/subscription`; após troca de plano o id muda.
+- Toda ação que escreve é protegida contra **toque duplo** (botão trava enquanto roda) e envia **`Idempotency-Key`** (UUID v4) por requisição.
+- **Status desconhecido** vira estado genérico "Status: {rawStatus}", nunca crash; JSON tolerante a campo ausente.
+- Fatura **R$ 0,00 em ciclo pausado** é esperada (`pausedCycle`), não erro.
+- Taxa de cancelamento antecipado **não** é calculada nem cobrada pelo app.
+- Testes só contra homologação/fake: a API cobra cartão de verdade na Vindi.
+- Analytics carrega `shopifyCustomerId`; dados de saúde/hábito só com consentimento e só **agregados diários**.

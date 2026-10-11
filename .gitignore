@@ -1,44 +1,34 @@
-# Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
+# Flutter / Dart
+.dart_tool/
+.packages
+.pub-cache/
+.pub/
+build/
+.flutter-plugins
+.flutter-plugins-dependencies
+*.iml
+.idea/
+.vscode/
+.metadata
+pubspec.lock
 
-# dependencies
-node_modules/
+# Plataformas geradas por `flutter create .` (versionar depois de gerar, se quiser)
+# android/
+# ios/
 
-# Expo
-.expo/
-dist/
-web-build/
-expo-env.d.ts
-
-# Native
-.kotlin/
-*.orig.*
+# Segredos / Firebase — nunca versionar
+android/app/google-services.json
+ios/Runner/GoogleService-Info.plist
+lib/firebase_options.dart
 *.jks
-*.p8
-*.p12
-*.key
-*.mobileprovision
+*.keystore
+key.properties
 
-# Metro
-.metro-health-check*
+# Saída da verificação
+verificacao.txt
 
-# debug
-npm-debug.*
-yarn-debug.*
-yarn-error.*
+# Arquivos de origem dos assets (já copiados para assets/)
 
-# macOS
-.DS_Store
-*.pem
-
-# local env files
-.env*.local
-
-# typescript
-*.tsbuildinfo
-
-# generated native folders
-/ios
-/android
-
-# env
-.env
+# restos da POC em React Native
+node_modules/
+.expo/

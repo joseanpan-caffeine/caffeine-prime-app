@@ -1,0 +1,68 @@
+name: caffeine_prime
+description: Caffeine Army Prime — gestão da assinatura (POC Flutter).
+publish_to: 'none'
+version: 0.1.0+1
+
+environment:
+  sdk: '>=3.5.0 <4.0.0'
+  flutter: '>=3.24.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+
+  # Estado e navegação
+  flutter_riverpod: ^2.6.1
+  go_router: ^14.6.2
+
+  # Rede e armazenamento
+  dio: ^5.7.0
+  flutter_secure_storage: ^9.2.2
+  shared_preferences: ^2.3.3
+
+  # Formatação e UI
+  # flutter_localizations fixa a versão do intl (0.19 no Flutter 3.24–3.27, 0.20 no 3.29+).
+  intl: '>=0.19.0 <0.21.0'
+  flutter_svg: ^2.0.10
+  cached_network_image: ^3.4.1
+  google_fonts: ^6.2.1
+  qr_flutter: ^4.1.0
+  flutter_markdown: ^0.7.4
+  url_launcher: ^6.3.1
+  package_info_plus: ^8.1.1
+
+  # Notificações locais / rotina
+  flutter_local_notifications: ^18.0.1
+  # flutter_local_notifications 18 pode exigir timezone 0.10; a API usada é igual.
+  timezone: '>=0.9.0 <0.11.0'
+
+  # Saúde / wearables (frente 2)
+  health: ^11.1.1
+
+  # Push (opcional em runtime — sem google-services no repositório)
+  firebase_core: ^3.8.1
+  firebase_messaging: ^15.1.6
+
+  # Login social
+  sign_in_with_apple: ^6.1.3
+  google_sign_in: ^6.2.2
+
+  # Deep links
+  app_links: ^6.3.3
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true
+
+  # Imagens de produto (fallback quando imageUrl é nulo/falha) e marcas.
+  # Nenhuma fonte embutida: Archivo vem do pacote google_fonts.
+  assets:
+    - assets/icon.png
+    - assets/brand/
+    - assets/products/
